@@ -15,13 +15,16 @@ Rectangle {
   property string fontFamily: Style.font.family
   property Component iconComponent
   property bool showNewItemCount: true
+  property bool usePlexGoldForNewItems: true
 
   signal dismissRequested()
   signal showNewItemCountRequested(bool value)
+  signal usePlexGoldForNewItemsRequested(bool value)
 
   readonly property bool inputFocused: serverField.activeFocus || tokenField.activeFocus
     || saveSettingsButton.activeFocus || closeSettingsButton.activeFocus
     || clearSettingsButton.activeFocus || newItemCountToggle.activeFocus
+    || plexGoldToggle.activeFocus
   readonly property real contentImplicitHeight: settingsColumn.implicitHeight
 
   visible: opened
@@ -171,6 +174,18 @@ Rectangle {
         foreground: root.foreground
         fontFamily: root.fontFamily
         onClicked: root.showNewItemCountRequested(!root.showNewItemCount)
+        Keys.onEscapePressed: root.close()
+      }
+
+      Toggle {
+        id: plexGoldToggle
+        width: parent.width
+        label: "Use Plex gold for new items"
+        description: "Otherwise use the Omarchy theme's active color."
+        checked: root.usePlexGoldForNewItems
+        foreground: root.foreground
+        fontFamily: root.fontFamily
+        onClicked: root.usePlexGoldForNewItemsRequested(!root.usePlexGoldForNewItems)
         Keys.onEscapePressed: root.close()
       }
 

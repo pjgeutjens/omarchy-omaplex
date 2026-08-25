@@ -10,6 +10,8 @@ BarWidget {
 
   readonly property color plexGold: "#e5a00d"
   readonly property bool showNewItemCount: setting("showNewItemCount", true) !== false
+  readonly property bool usePlexGoldForNewItems:
+    setting("usePlexGoldForNewItems", true) !== false
 
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item
@@ -56,7 +58,8 @@ BarWidget {
     hasVisualContent: true
     fixedWidth: root.vertical ? -1 : plexRow.implicitWidth + button.scaledHorizontalMargin * 2
     active: PlexCore.PlexState.newCount > 0
-    activeColor: root.plexGold
+    activeColor: root.usePlexGoldForNewItems
+      ? root.plexGold : (root.bar ? root.bar.urgent : Color.urgent)
     tooltipText: PlexCore.PlexState.tooltipText
 
     onPressed: function(buttonCode) {

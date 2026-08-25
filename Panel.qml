@@ -40,6 +40,8 @@ Panel {
     ? "RECENT MOVIES" : (activeView === "series" ? "RECENT SHOWS"
       : (activeView === "recent" ? "RECENTLY ADDED" : "CONTINUE WATCHING"))
   readonly property bool showNewItemCount: setting("showNewItemCount", true) !== false
+  readonly property bool usePlexGoldForNewItems:
+    setting("usePlexGoldForNewItems", true) !== false
   readonly property var barIdentity: hostWidget || root
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property color dimForeground: Qt.darker(contentForeground, 1.55)
@@ -122,6 +124,10 @@ Panel {
 
   function setShowNewItemCount(value) {
     root.persistSettings({ showNewItemCount: value === true })
+  }
+
+  function setUsePlexGoldForNewItems(value) {
+    root.persistSettings({ usePlexGoldForNewItems: value === true })
   }
 
   function toggleWatched() {
@@ -721,7 +727,11 @@ Panel {
         fontFamily: root.contentFontFamily
         iconComponent: plexIcon
         showNewItemCount: root.showNewItemCount
+        usePlexGoldForNewItems: root.usePlexGoldForNewItems
         onShowNewItemCountRequested: function(value) { root.setShowNewItemCount(value) }
+        onUsePlexGoldForNewItemsRequested: function(value) {
+          root.setUsePlexGoldForNewItems(value)
+        }
         onDismissRequested: root.close()
       }
     }
