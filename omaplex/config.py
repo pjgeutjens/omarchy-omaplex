@@ -54,12 +54,14 @@ def validate_config(value: Any) -> dict[str, Any]:
     machine_id = clean_text(value.get("machineIdentifier"), 128)
     if machine_id and not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", machine_id):
         raise ConfigurationError("The saved Plex server identifier is invalid")
+    server_name = clean_text(value.get("serverName"), 128)
     return {
         "schemaVersion": SCHEMA_VERSION,
         "server": validate_origin(value.get("server")),
         "movieSectionIds": movies,
         "tvSectionIds": shows,
         "machineIdentifier": machine_id,
+        "serverName": server_name,
     }
 
 

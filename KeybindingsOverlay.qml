@@ -31,6 +31,7 @@ Rectangle {
     { category: "Panel actions", keys: "W", action: "Use a floating window" },
     { category: "Panel actions", keys: "F", action: "Use fullscreen playback" },
     { category: "Panel actions", keys: "O", action: "Open the item in Plex Web" },
+    { category: "Panel actions", keys: "P", action: "Open Plex Web" },
     { category: "Panel actions", keys: "X", action: "Toggle selected item watched or unwatched" },
     { category: "Panel actions", keys: "R", action: "Refresh Plex activity and recently added media" },
     { category: "Panel actions", keys: "U", action: "Discover and scan all movie and show libraries" },

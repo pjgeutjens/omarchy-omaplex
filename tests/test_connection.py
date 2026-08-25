@@ -58,7 +58,7 @@ class PlexHelperTests(unittest.TestCase):
                 "error": "",
             }
             client = mock.Mock()
-            client.discover.return_value = (libraries, "server-id")
+            client.discover.return_value = (libraries, "server-id", "pgs-plex")
             store = FakeStore()
             with (
                 tempfile.TemporaryDirectory() as directory,
@@ -82,6 +82,8 @@ class PlexHelperTests(unittest.TestCase):
             self.assertEqual(store.stored, ["safeToken_123456"])
             self.assertEqual(config["movieSectionIds"], ["3", "7"])
             self.assertEqual(config["tvSectionIds"], ["2"])
+            self.assertEqual(config["serverName"], "pgs-plex")
+            self.assertEqual(document["connection"]["serverName"], "pgs-plex")
             self.assertEqual(
                 document["connection"]["movieLibraries"][1]["title"], "Documentaries"
             )
@@ -95,6 +97,7 @@ class PlexHelperTests(unittest.TestCase):
             client.discover.return_value = (
                 [{"id": "2", "type": "show", "title": "Series"}],
                 "server-id",
+                "new-plex",
             )
             store = FakeStore("existingToken_1234")
             snapshot = {
@@ -156,6 +159,7 @@ class PlexHelperTests(unittest.TestCase):
                     "movieSectionIds": ["3"],
                     "tvSectionIds": ["2"],
                     "machineIdentifier": "old-server-id",
+                    "serverName": "old-plex",
                 }
                 save_config(original)
                 with (
@@ -212,6 +216,7 @@ class PlexHelperTests(unittest.TestCase):
             self.assertTrue(store.cleared)
             self.assertFalse(document["configured"])
             self.assertEqual(document["connection"]["server"], "")
+            self.assertEqual(document["connection"]["serverName"], "")
 
     def test_config_rejects_paths_and_bad_sections(self):
             with self.assertRaises(ConfigurationError):

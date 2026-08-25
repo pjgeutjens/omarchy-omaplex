@@ -294,6 +294,7 @@ Panel {
         else if (text === "m" || text === "M") root.setView("movies")
         else if (text === "s" || text === "S") root.setView("series")
         else if (text === "b" || text === "B") root.summonBrowser()
+        else if (text === "p" || text === "P") PlexCore.PlexState.openPlexWeb()
         else if (text === "?") root.toggleHelp()
         else if (text === "/") root.openMediaSearch()
         else if ((text === "o" || text === "O") && root.visibleItems.length > 0)
@@ -312,7 +313,9 @@ Panel {
           title: "Plex"
           meta: PlexCore.PlexState.safeText(
             PlexCore.PlexState.configured
-              ? PlexCore.PlexState.freshnessText + " · " + root.sourceItems.length + " items"
+              ? (PlexCore.PlexState.connectionName !== ""
+                  ? "Connected to " + PlexCore.PlexState.connectionName + " · " : "")
+                + PlexCore.PlexState.freshnessText + " · " + root.sourceItems.length + " items"
               : "Plex setup required",
             180
           )
@@ -493,6 +496,7 @@ Panel {
           implicitHeight: Math.max(
             listHeader.implicitHeight,
             sourceBadge.implicitHeight,
+            plexWebButton.implicitHeight,
             watchedVisibilityButton.implicitHeight
           )
 
@@ -509,7 +513,8 @@ Panel {
             id: sourceBadge
             width: sourceLabel.implicitWidth + Style.space(14)
             height: Style.space(20)
-            anchors.right: parent.right
+            anchors.right: plexWebButton.left
+            anchors.rightMargin: Style.space(4)
             anchors.verticalCenter: parent.verticalCenter
             radius: Style.cornerRadius
             color: PlexCore.PlexState.sourceState === "updated" ? Color.accent : "transparent"
@@ -526,6 +531,18 @@ Panel {
               font.pixelSize: Style.font.caption
               font.bold: true
             }
+          }
+
+          PanelActionButton {
+            id: plexWebButton
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            iconText: "󰚺"
+            tooltipText: "Open Plex Web (P)"
+            foreground: root.contentForeground
+            fontFamily: root.contentFontFamily
+            enabled: PlexCore.PlexState.configured && !PlexCore.PlexState.openingWeb
+            onClicked: PlexCore.PlexState.openPlexWeb()
           }
 
           PanelActionButton {

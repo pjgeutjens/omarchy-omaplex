@@ -71,7 +71,7 @@ def configure_from_env(path: Path, store: SecretStore | None = None) -> dict[str
     if not re.fullmatch(r"[A-Za-z0-9_-]{10,256}", token):
         raise ConfigurationError("PLEX_TOKEN is missing or invalid")
     client = PlexClient(server, token)
-    libraries, machine_id = client.discover()
+    libraries, machine_id, server_name = client.discover()
     available_movies = [item["id"] for item in libraries if item["type"] == "movie"]
     available_shows = [item["id"] for item in libraries if item["type"] == "show"]
     movies = requested_ids(values.get("PLEX_MOVIES_SECTION_ID", "")) or available_movies
@@ -91,6 +91,7 @@ def configure_from_env(path: Path, store: SecretStore | None = None) -> dict[str
             "movieSectionIds": movies,
             "tvSectionIds": shows,
             "machineIdentifier": machine_id,
+            "serverName": server_name,
         }
     )
     (store or SecretStore()).store(token)
@@ -98,6 +99,7 @@ def configure_from_env(path: Path, store: SecretStore | None = None) -> dict[str
     return {
         "configured": True,
         "server": server,
+        "serverName": server_name,
         "movieLibraries": [item for item in libraries if item["id"] in movies],
         "tvLibraries": [item for item in libraries if item["id"] in shows],
         "warning": "Plain HTTP exposes Plex traffic on the network; use it only on a trusted LAN."
@@ -128,7 +130,12 @@ def connection_info(
     config: dict[str, Any] | None, libraries: list[dict[str, str]] | None = None
 ) -> dict[str, Any]:
     if config is None:
-        return {"server": "", "movieLibraries": [], "seriesLibraries": []}
+        return {
+            "server": "",
+            "serverName": "",
+            "movieLibraries": [],
+            "seriesLibraries": [],
+        }
     values = libraries or []
     movies = [
         {"id": item["id"], "title": clean_text(item.get("title"), 128)}
@@ -145,6 +152,7 @@ def connection_info(
         shows = [{"id": item, "title": ""} for item in config["tvSectionIds"]]
     return {
         "server": config["server"],
+        "serverName": config["serverName"],
         "movieLibraries": movies,
         "seriesLibraries": shows,
     }
@@ -179,7 +187,7 @@ def configure_connection(
     if not requested_token:
         raise ConfigurationError("Enter a Plex token")
     client = PlexClient(server, requested_token)
-    libraries, machine_id = client.discover()
+    libraries, machine_id, server_name = client.discover()
     movies = [item["id"] for item in libraries if item["type"] == "movie"]
     shows = [item["id"] for item in libraries if item["type"] == "show"]
     config = validate_config(
@@ -189,6 +197,7 @@ def configure_connection(
             "movieSectionIds": movies,
             "tvSectionIds": shows,
             "machineIdentifier": machine_id,
+            "serverName": server_name,
         }
     )
     snapshot = recent_snapshot(client, config)

@@ -180,6 +180,25 @@ class PlexHelperTests(unittest.TestCase):
                 command_client.request_empty.call_args.args[0].startswith("/:/scrobble?")
             )
 
+    def test_plex_web_urls_support_home_and_item_deep_links(self):
+            config = {
+                "server": "http://plex:32400",
+                "machineIdentifier": "server-id",
+            }
+            self.assertEqual(
+                playback_module.plex_web_url(config),
+                "http://plex:32400/web/index.html",
+            )
+            item_url = playback_module.plex_web_url(config, "42")
+            self.assertIn("#!/server/server-id/details", item_url)
+            self.assertIn("%2Flibrary%2Fmetadata%2F42", item_url)
+            self.assertEqual(
+                cli_module.parser().parse_args(["open-web"]).rating_key,
+                "",
+            )
+            with self.assertRaises(ConfigurationError):
+                playback_module.plex_web_url(config, "../42")
+
     def test_player_geometry_is_private_bounded_and_read_from_own_pid(self):
             geometry = {
                 "schemaVersion": 1,

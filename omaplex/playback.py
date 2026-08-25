@@ -474,7 +474,9 @@ def play(rating_key: str, mode: PlaybackMode) -> int:
     return return_code
 
 
-def plex_web_url(config: dict[str, Any], rating_key: str) -> str:
+def plex_web_url(config: dict[str, Any], rating_key: str = "") -> str:
+    if rating_key == "":
+        return str(config["server"]) + "/web/index.html"
     if not re.fullmatch(r"\d{1,96}", rating_key):
         raise ConfigurationError("Invalid Plex rating key")
     if not config.get("machineIdentifier"):

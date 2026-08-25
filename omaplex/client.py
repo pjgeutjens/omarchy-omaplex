@@ -128,7 +128,13 @@ class PlexClient:
             raise ResponseError("Plex returned HTTP " + str(status)) from error
         response.close()
 
-    def discover(self) -> tuple[list[dict[str, str]], str]:
+    def fetch_server_name(self) -> str:
+        container = self.request_json("/").get("MediaContainer", {})
+        if not isinstance(container, dict):
+            raise ResponseError("Plex returned an invalid server identity")
+        return clean_text(container.get("friendlyName"), 128)
+
+    def discover(self) -> tuple[list[dict[str, str]], str, str]:
         document = self.request_json("/library/sections")
         directories = document.get("MediaContainer", {}).get("Directory", [])
         if not isinstance(directories, list) or len(directories) > MAX_SECTIONS:
@@ -156,7 +162,7 @@ class PlexClient:
         )
         if machine_id and not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", machine_id):
             machine_id = ""
-        return libraries, machine_id
+        return libraries, machine_id, self.fetch_server_name()
 
 
 def validate_origin(value: Any) -> str:

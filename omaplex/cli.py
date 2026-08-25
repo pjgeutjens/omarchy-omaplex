@@ -70,7 +70,7 @@ def parser() -> argparse.ArgumentParser:
         "--state", type=WatchState, choices=tuple(WatchState), required=True
     )
     web = commands.add_parser("open-web")
-    web.add_argument("--rating-key", required=True)
+    web.add_argument("--rating-key", default="")
     return result
 
 

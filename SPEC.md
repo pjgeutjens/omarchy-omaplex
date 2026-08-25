@@ -26,7 +26,7 @@ Version 0.2:
 - remembers the last visible windowed player rectangle and restores it through Hyprland;
 - reports playback progress and watched completion to Plex;
 - lets the user mark any compact-list item watched or unwatched;
-- keeps Plex Web as an explicit item action;
+- keeps Plex Web as both an explicit item action and a global fallback action;
 - discovers and scans every movie and show library, with explicit confirmation that Plex accepted the request rather than claiming the scan finished;
 - exposes `open`, `close`, `toggle`, `refresh`, `scan`, `settings`, and `status` through Omarchy Shell IPC.
 
@@ -44,7 +44,7 @@ Version 0.2:
 - Enter plays the selected item in the chosen window mode.
 - `x` toggles the selected item between watched and unwatched; the watch-state badge performs the same action.
 - `c`, `a`, `m`, and `s` select Continue, Added, Movies, and Shows.
-- `b` opens Browse All, `t` toggles watched items, `o` opens Plex Web, and `,` opens settings.
+- `b` opens Browse All, `t` toggles watched items, `o` opens the selected item in Plex Web, `p` opens Plex Web itself, and `,` opens settings.
 - `r` refreshes, `u` requests scans for all video libraries, and Escape closes the active view.
 
 The first panel paint uses cached metadata. A Plex request must not delay panel opening.
@@ -64,7 +64,7 @@ Normalize each entry to a small model containing rating keys, media kind, title,
 
 ## Configuration and credentials
 
-Required setup values are a Plex server origin and `X-Plex-Token`. Selected library section IDs and display settings are non-secret.
+Required setup values are a Plex server origin and `X-Plex-Token`. The Plex friendly name, selected library section IDs, and display settings are non-secret.
 
 - Open an in-panel connection form automatically when no configuration exists.
 - Accept the token only through bounded stdin to the helper.

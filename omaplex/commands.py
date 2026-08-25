@@ -15,7 +15,8 @@ from omaplex.common import (
     utc_now,
     wall_deadline,
 )
-from omaplex.connection import client_from_saved, status_document
+from omaplex.connection import client_from_saved, status_document, with_connection
+from omaplex.config import save_config
 from omaplex.constants import MAX_CACHE_BYTES, MAX_SECTIONS
 
 
@@ -30,9 +31,17 @@ def command_refresh() -> int:
     try:
         with wall_deadline(25, "Plex refresh exceeded twenty-five seconds"):
             client, config = client_from_saved()
+            if not config["serverName"]:
+                try:
+                    server_name = client.fetch_server_name()
+                    if server_name:
+                        config = {**config, "serverName": server_name}
+                        save_config(config)
+                except (PlexError, OSError):
+                    pass
             snapshot = recent_snapshot(client, config)
         save_snapshot(snapshot)
-        print_json(snapshot)
+        print_json(with_connection(snapshot, config))
         return 0
     except PlexError as error:
         saved = status_document()

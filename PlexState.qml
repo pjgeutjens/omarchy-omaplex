@@ -24,6 +24,7 @@ Item {
   property string playbackMode: "windowed"
   property string playingTitle: ""
   property string connectionServer: ""
+  property string connectionName: ""
   property var movieLibraries: []
   property var seriesLibraries: []
   property string setupMessage: ""
@@ -58,6 +59,7 @@ Item {
   readonly property bool marking: markProcess.running
   readonly property bool updating: refreshProcess.running || scanning || marking || settingsBusy
   readonly property bool playing: playbackProcess.running
+  readonly property bool openingWeb: webProcess.running
   readonly property string sourceLabel: Model.sourceLabel(sourceState, updating)
   readonly property string freshnessText: Model.relativeTime(lastSuccessAt, Date.now())
   readonly property string tooltipText: Model.tooltip({
@@ -97,9 +99,10 @@ Item {
 
   function applyConnection(value) {
     if (!value) return
-    if (typeof value.server !== "string")
+    if (typeof value.server !== "string" || typeof value.serverName !== "string")
       throw new Error("Plex returned invalid connection settings")
     connectionServer = safeText(value.server, 512)
+    connectionName = safeText(value.serverName, 128)
     movieLibraries = normalizeLibraries(value.movieLibraries)
     seriesLibraries = normalizeLibraries(value.seriesLibraries)
   }
@@ -252,6 +255,13 @@ Item {
     var ratingKey = String(item.ratingKey || "")
     if (!/^\d{1,96}$/.test(ratingKey)) return false
     webProcess.command = [helperCommand, "open-web", "--rating-key", ratingKey]
+    webProcess.running = true
+    return true
+  }
+
+  function openPlexWeb() {
+    if (!configured || webProcess.running) return false
+    webProcess.command = [helperCommand, "open-web"]
     webProcess.running = true
     return true
   }

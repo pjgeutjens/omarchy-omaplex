@@ -4,7 +4,7 @@ A right-side Omarchy bar widget with bounded Continue Watching, combined Recentl
 
 Show rows use the matching Plex On Deck episode when one is available. Its play action resumes the current episode or starts the next one.
 
-Click a row to stream it through `mpv`. Choose Windowed for a normal floating, movable window or Fullscreen before playback. Windowed mode remembers its last compositor position and size for the next launch; if that rectangle is no longer visible on a connected monitor, only the saved size is used. Press `O` to open the same item in Plex Web.
+Click a row to stream it through `mpv`. Choose Windowed for a normal floating, movable window or Fullscreen before playback. Windowed mode remembers its last compositor position and size for the next launch; if that rectangle is no longer visible on a connected monitor, only the saved size is used. Press `O` to open the same item in Plex Web. Press `P`, or click the Plex glyph beside the live-status badge, to open Plex Web itself.
 
 Browse All opens a separate fullscreen Omarchy panel. It searches and pages through the complete movie or show library without loading the full catalogue into the bar popup. Opening a show drills into its episodes.
 
@@ -39,7 +39,7 @@ Open the Plex widget after installation. On first launch it opens Connection set
 2. Paste an `X-Plex-Token`.
 3. Select **Test and save**.
 
-The connection is tested before anything is replaced. The plugin discovers every movie and show library on the server, saves their section IDs, and immediately loads the lists. Open Connection settings later with `,` or the small settings button in the panel footer. When editing a working connection, leave the token blank to keep the saved token.
+The connection is tested before anything is replaced. The plugin discovers the Plex server's friendly name and every movie and show library, saves that non-secret connection metadata, and immediately loads the lists. Open Connection settings later with `,` or the small settings button in the panel footer. When editing a working connection, leave the token blank to keep the saved token.
 
 The server origin and discovered section IDs go to `~/.config/omaplex/config.json`; the last windowed player rectangle goes to `player-window.json` in the same private directory. The token goes to the desktop secret service. It isn't written to Omarchy settings, cache files, URLs, logs, IPC output, or process arguments. Removing credentials from Connection settings requires a confirmation click and clears both the saved token and Plex data while retaining the player geometry preference.
 
@@ -76,6 +76,7 @@ For development or migration, the helper can import the four `PLEX_` values show
 - W: select Windowed playback
 - F: select Fullscreen playback
 - O: open the selected item in Plex Web
+- P or the Plex glyph beside the live-status badge: open Plex Web
 - R: refresh the displayed Plex data
 - U or Scan all: discover and scan every movie and show library
 - Escape: close the panel
