@@ -498,9 +498,11 @@ Item {
       try {
         if (exitCode !== 0) throw new Error(stderr || "Plex setup failed")
         root.applyDocument(stdout)
-        root.setupMessage = "Connected to " + root.movieLibraries.length + " movie and "
-          + root.seriesLibraries.length + " series "
-          + ((root.movieLibraries.length + root.seriesLibraries.length) === 1 ? "library" : "libraries")
+        var movieCount = root.movieLibraries.length
+        var showCount = root.seriesLibraries.length
+        root.setupMessage = "Connected to " + movieCount + " movie "
+          + (movieCount === 1 ? "library" : "libraries") + " and "
+          + showCount + " show " + (showCount === 1 ? "library" : "libraries")
         root.configurationFinished(true, root.setupMessage)
       } catch (error) {
         root.lastError = root.safeText(stderr || (exitCode === 124

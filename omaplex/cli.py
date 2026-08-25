@@ -1,0 +1,140 @@
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+from omaplex.browse import BrowseKind, SearchScope, browse_document
+from omaplex.commands import command_refresh, command_scan, print_json
+from omaplex.common import (
+    ConfigurationError,
+    PlexError,
+    ResponseError,
+    clean_text,
+    run_no_output,
+    wall_deadline,
+)
+from omaplex.config import load_config
+from omaplex.connection import (
+    clear_configuration,
+    client_from_saved,
+    configure_connection,
+    configure_from_env,
+    read_setup,
+    status_document,
+)
+from omaplex.playback import (
+    PlaybackMode,
+    WatchState,
+    play,
+    plex_web_url,
+    set_watch_state,
+)
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(prog="omaplex")
+    commands = result.add_subparsers(dest="command", required=True)
+    commands.add_parser("status")
+    commands.add_parser("refresh")
+    commands.add_parser("scan")
+    commands.add_parser("configure")
+    commands.add_parser("clear-configuration")
+    browse = commands.add_parser("browse")
+    browse.add_argument(
+        "--kind", type=BrowseKind, choices=tuple(BrowseKind), required=True
+    )
+    browse.add_argument("--query", default="")
+    browse.add_argument("--offset", type=int, default=0)
+    browse.add_argument("--limit", type=int, default=40)
+    browse.add_argument("--parent-rating-key", default="")
+    browse.add_argument(
+        "--search-scope",
+        type=SearchScope,
+        choices=tuple(SearchScope),
+        default=SearchScope.MOVIES,
+    )
+    configure = commands.add_parser("configure-from-env")
+    configure.add_argument("env_file")
+    play_command = commands.add_parser("play")
+    play_command.add_argument("--rating-key", required=True)
+    play_command.add_argument(
+        "--mode",
+        type=PlaybackMode,
+        choices=tuple(PlaybackMode),
+        default=PlaybackMode.WINDOWED,
+    )
+    mark_command = commands.add_parser("mark")
+    mark_command.add_argument("--rating-key", required=True)
+    mark_command.add_argument(
+        "--state", type=WatchState, choices=tuple(WatchState), required=True
+    )
+    web = commands.add_parser("open-web")
+    web.add_argument("--rating-key", required=True)
+    return result
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parser().parse_args(argv)
+    try:
+        if args.command == "status":
+            print_json(status_document())
+            return 0
+        if args.command == "refresh":
+            return command_refresh()
+        if args.command == "scan":
+            return command_scan()
+        if args.command == "configure":
+            server, token = read_setup()
+            with wall_deadline(30, "Plex setup exceeded thirty seconds"):
+                print_json(configure_connection(server, token))
+            return 0
+        if args.command == "clear-configuration":
+            print_json(clear_configuration())
+            return 0
+        if args.command == "browse":
+            with wall_deadline(20, "Plex browse exceeded twenty seconds"):
+                client, config = client_from_saved()
+                print_json(
+                    browse_document(
+                        client,
+                        config,
+                        args.kind,
+                        args.query,
+                        args.offset,
+                        args.limit,
+                        args.parent_rating_key,
+                        args.search_scope,
+                    )
+                )
+            return 0
+        if args.command == "configure-from-env":
+            with wall_deadline(25, "Plex setup exceeded twenty-five seconds"):
+                print_json(configure_from_env(Path(args.env_file)))
+            return 0
+        if args.command == "play":
+            return play(args.rating_key, args.mode)
+        if args.command == "mark":
+            with wall_deadline(10, "Plex watch-state update exceeded ten seconds"):
+                client, _ = client_from_saved()
+                set_watch_state(client, args.rating_key, args.state)
+            return 0
+        if args.command == "open-web":
+            config = load_config()
+            if config is None:
+                raise ConfigurationError("Omaplex is not configured")
+            url = plex_web_url(config, args.rating_key)
+            try:
+                return_code = run_no_output(["xdg-open", url], timeout=10)
+            except FileNotFoundError as error:
+                raise ConfigurationError("xdg-open is unavailable") from error
+            if return_code != 0:
+                raise ResponseError("Could not open Plex Web")
+            return return_code
+        raise ConfigurationError("Unknown command")
+    except PlexError as error:
+        print(clean_text(error, 220), file=sys.stderr)
+        return 2
+    except Exception:  # noqa: BLE001 - CLI boundary hides internal tracebacks
+        print("The Plex helper failed unexpectedly", file=sys.stderr)
+        return 2

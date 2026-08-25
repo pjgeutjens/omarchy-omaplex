@@ -53,7 +53,7 @@ Dogfood the current plugin before expanding it. Record actual playback failures 
   - Plex server URL.
   - Password-style token input.
   - Test and Save.
-  - Discovered movie and series libraries.
+  - Discovered movie and show libraries.
   - Connection status and last successful refresh.
   - Clear credentials.
 - [x] Send the token to the helper over stdin and store it in the desktop Secret Service.

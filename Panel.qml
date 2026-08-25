@@ -19,47 +19,10 @@ Panel {
   property string playbackMode: "windowed"
   property bool showWatched: true
   property bool helpOpen: false
-  property string helpQuery: ""
   property bool mediaSearchOpen: false
   property string mediaQuery: ""
   property string activeView: "continue"
-  property bool settingsOpen: false
-  property bool confirmClear: false
-
-  readonly property var helpBindings: [
-    { category: "Views & navigation", keys: "↑/↓ or J/K", action: "Move through media" },
-    { category: "Views & navigation", keys: "Enter", action: "Play the selected item" },
-    { category: "Views & navigation", keys: "[ / ]", action: "Move between compact Plex views" },
-    { category: "Views & navigation", keys: "T", action: "Show or hide watched items" },
-    { category: "Views & navigation", keys: "C", action: "Show Continue Watching" },
-    { category: "Views & navigation", keys: "A", action: "Show all recently added media" },
-    { category: "Views & navigation", keys: "M", action: "Show recently added movies" },
-    { category: "Views & navigation", keys: "S", action: "Show recently added series" },
-    { category: "Views & navigation", keys: "B", action: "Open Browse All fullscreen" },
-    { category: "Views & navigation", keys: "/", action: "Search the current compact media view" },
-    { category: "Panel actions", keys: "?", action: "Toggle this keybindings list" },
-    { category: "Panel actions", keys: ",", action: "Open connection settings" },
-    { category: "Panel actions", keys: "W", action: "Use a floating window" },
-    { category: "Panel actions", keys: "F", action: "Use fullscreen playback" },
-    { category: "Panel actions", keys: "O", action: "Open the item in Plex Web" },
-    { category: "Panel actions", keys: "X", action: "Toggle selected item watched or unwatched" },
-    { category: "Panel actions", keys: "R", action: "Refresh recently added media" },
-    { category: "Panel actions", keys: "U", action: "Discover and scan all movie and series libraries" },
-    { category: "Panel actions", keys: "Esc", action: "Close help or the panel" },
-    { category: "Playback", keys: "Mouse", action: "Show mpv playback controls" },
-    { category: "Playback", keys: "Space", action: "Pause or resume" },
-    { category: "Playback", keys: "←/→", action: "Seek backward or forward" },
-    { category: "Playback", keys: "↑/↓", action: "Raise or lower volume" },
-    { category: "Playback", keys: "M", action: "Mute or unmute" },
-    { category: "Playback", keys: "#", action: "Cycle audio streams" },
-    { category: "Playback", keys: "J", action: "Cycle subtitle streams" },
-    { category: "Playback", keys: "F", action: "Toggle player fullscreen" },
-    { category: "Playback", keys: "Q", action: "Quit the player" },
-    { category: "Browse All", keys: "/", action: "Fuzzy-search the selected Movies or Series scope" },
-    { category: "Browse All", keys: "M/S", action: "Browse movies or series" },
-    { category: "Browse All", keys: "N/P", action: "Move to the next or previous page" },
-    { category: "Browse All", keys: "Esc", action: "Go back or close Browse All" }
-  ]
+  property alias settingsOpen: settingsOverlay.opened
 
   readonly property var sourceItems: activeView === "movies"
     ? PlexCore.PlexState.movieItems
@@ -75,11 +38,8 @@ Panel {
     return item.watchState === "watched"
   }).length
   readonly property string activeViewTitle: activeView === "movies"
-    ? "RECENT MOVIES" : (activeView === "series" ? "RECENT SERIES"
+    ? "RECENT MOVIES" : (activeView === "series" ? "RECENT SHOWS"
       : (activeView === "recent" ? "RECENTLY ADDED" : "CONTINUE WATCHING"))
-  readonly property var filteredHelpBindings: filterHelpBindings()
-  readonly property var groupedHelpBindings: groupHelpBindings()
-
   readonly property var barIdentity: hostWidget || root
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property color dimForeground: Qt.darker(contentForeground, 1.55)
@@ -180,7 +140,7 @@ Panel {
   function openMediaSearch() {
     if (settingsOpen) return
     helpOpen = false
-    helpQuery = ""
+    keybindingsOverlay.reset()
     mediaSearchOpen = true
     selectedIndex = 0
     Qt.callLater(function() { mediaSearchField.forceActiveFocus() })
@@ -194,44 +154,16 @@ Panel {
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
-  function filterHelpBindings() {
-    var query = String(helpQuery || "").trim().toLowerCase()
-    if (query === "") return helpBindings
-    return helpBindings.filter(function(binding) {
-      return (binding.category + " " + binding.keys + " " + binding.action)
-        .toLowerCase().indexOf(query) !== -1
-    })
-  }
-
-  function groupHelpBindings() {
-    var rows = []
-    var category = ""
-    for (var index = 0; index < filteredHelpBindings.length; index++) {
-      var binding = filteredHelpBindings[index]
-      if (binding.category !== category) {
-        category = binding.category
-        rows.push({ kind: "header", category: category, keys: "", action: "" })
-      }
-      rows.push({
-        kind: "binding",
-        category: binding.category,
-        keys: binding.keys,
-        action: binding.action
-      })
-    }
-    return rows
-  }
-
   function openHelp() {
     mediaSearchOpen = false
     mediaQuery = ""
     helpOpen = true
-    Qt.callLater(function() { helpSearch.forceActiveFocus() })
+    keybindingsOverlay.focusSearch()
   }
 
   function closeHelp() {
     helpOpen = false
-    helpQuery = ""
+    keybindingsOverlay.reset()
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
@@ -242,51 +174,32 @@ Panel {
 
   function openSettings() {
     helpOpen = false
-    helpQuery = ""
+    keybindingsOverlay.reset()
     mediaSearchOpen = false
     mediaQuery = ""
-    confirmClear = false
-    settingsOpen = true
-    serverField.text = PlexCore.PlexState.connectionServer
-    tokenField.text = ""
-    Qt.callLater(function() { serverField.forceActiveFocus() })
+    settingsOverlay.open()
   }
 
   function closeSettings() {
-    confirmClear = false
-    if (!PlexCore.PlexState.configured) {
-      root.close()
-      return
+    settingsOverlay.close()
+    if (!settingsOverlay.opened)
+      Qt.callLater(function() { keyCatcher.forceActiveFocus() })
+  }
+
+  onOpenedChanged: {
+    if (opened) {
+      root.cursorActive = true
+      root.clampSelection()
+      if (PlexCore.PlexState.initialized && !PlexCore.PlexState.configured)
+        root.openSettings()
+      else Qt.callLater(function() { keyCatcher.forceActiveFocus() })
+    } else {
+      root.helpOpen = false
+      keybindingsOverlay.reset()
+      root.mediaSearchOpen = false
+      root.mediaQuery = ""
+      settingsOverlay.dismiss()
     }
-    settingsOpen = false
-    Qt.callLater(function() { keyCatcher.forceActiveFocus() })
-  }
-
-  function submitSetup() {
-    var submitted = PlexCore.PlexState.configure({
-      server: serverField.text,
-      token: tokenField.text
-    })
-    if (submitted) tokenField.text = ""
-  }
-
-  function librarySummary() {
-    var movies = PlexCore.PlexState.movieLibraries
-    var series = PlexCore.PlexState.seriesLibraries
-    var movieNames = movies.map(function(item) { return item.title || "Section " + item.id })
-    var seriesNames = series.map(function(item) { return item.title || "Section " + item.id })
-    var lines = []
-    if (movieNames.length) lines.push("Movies · " + movieNames.join(", "))
-    if (seriesNames.length) lines.push("Series · " + seriesNames.join(", "))
-    return lines.length ? lines.join("\n") : "Libraries are discovered when the connection is tested."
-  }
-
-  onOpenedChanged: if (opened) {
-    root.cursorActive = true
-    root.clampSelection()
-    if (PlexCore.PlexState.initialized && !PlexCore.PlexState.configured)
-      root.openSettings()
-    else Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
   Connections {
@@ -300,15 +213,12 @@ Panel {
         root.openSettings()
     }
     function onConfigurationFinished(success, detail) {
-      if (success) {
-        root.settingsOpen = false
-        root.confirmClear = false
+      settingsOverlay.finishConfiguration(success)
+      if (success)
         Qt.callLater(function() { keyCatcher.forceActiveFocus() })
-      }
     }
     function onConfiguredChanged() {
-      if (root.settingsOpen && !PlexCore.PlexState.configured)
-        serverField.text = PlexCore.PlexState.connectionServer
+      settingsOverlay.syncServer()
     }
   }
 
@@ -334,17 +244,15 @@ Panel {
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(430))
     contentHeight: panel.fittedContentHeight(
-      root.settingsOpen ? settingsColumn.implicitHeight : panelColumn.implicitHeight,
+      root.settingsOpen ? settingsOverlay.contentImplicitHeight : panelColumn.implicitHeight,
       Style.space(760)
     )
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: helpSearch.activeFocus || mediaSearchField.activeFocus
-        || serverField.activeFocus || tokenField.activeFocus
-        || saveSettingsButton.activeFocus || closeSettingsButton.activeFocus
-        || clearSettingsButton.activeFocus
+      blocked: keybindingsOverlay.inputFocused || mediaSearchField.activeFocus
+        || settingsOverlay.inputFocused
       onMoveRequested: function(dx, dy) {
         if (!root.settingsOpen && !root.helpOpen) {
           if (dy !== 0) root.moveSelection(dy)
@@ -369,7 +277,7 @@ Panel {
         }
         if (root.helpOpen) {
           if (text === "?") root.closeHelp()
-          else if (text === "/") helpSearch.forceActiveFocus()
+          else if (text === "/") keybindingsOverlay.focusSearch()
           return
         }
         if (text === ",") root.openSettings()
@@ -395,6 +303,7 @@ Panel {
 
       Column {
         id: panelColumn
+        visible: !root.helpOpen && !root.settingsOpen
         width: parent.width
         spacing: Style.space(10)
 
@@ -504,13 +413,18 @@ Panel {
           }
 
           Button {
-            text: "Series"
+            text: "Shows"
             fontSize: Style.font.caption
             foreground: root.contentForeground
             fontFamily: root.contentFontFamily
             bordered: true
             active: root.activeView === "series"
             onClicked: root.setView("series")
+          }
+
+          Item {
+            width: Style.space(5)
+            height: 1
           }
 
           Button {
@@ -646,7 +560,7 @@ Panel {
         Text {
           visible: PlexCore.PlexState.initialized && !PlexCore.PlexState.configured
           width: parent.width
-          text: "Enter your Plex server and token in Connection settings. Movie and series libraries are discovered automatically."
+          text: "Enter your Plex server and token in Connection settings. Movie and show libraries are discovered automatically."
           textFormat: Text.PlainText
           color: root.dimForeground
           font.family: root.contentFontFamily
@@ -685,111 +599,22 @@ Panel {
           verticalAlignment: Text.AlignVCenter
         }
 
-        ListView {
+        MediaList {
           id: mediaList
-          visible: root.visibleItems.length > 0
           width: parent.width
           height: Math.min(contentHeight, Style.space(root.mediaSearchOpen ? 365 : 410))
-          clip: true
-          spacing: Style.space(3)
-          model: root.visibleItems
-          currentIndex: root.selectedIndex
-          boundsBehavior: Flickable.StopAtBounds
-          interactive: contentHeight > height
-          reuseItems: true
-
-          ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-
-          delegate: CursorSurface {
-            id: mediaRow
-            required property var modelData
-            required property int index
-            width: mediaList.width
-            implicitHeight: Style.space(58)
-            foreground: root.contentForeground
-            hasCursor: root.cursorActive && root.selectedIndex === index
-            enabled: !PlexCore.PlexState.playing
-
-            MouseArea {
-              anchors.fill: parent
-              hoverEnabled: true
-              cursorShape: PlexCore.PlexState.playing ? Qt.ArrowCursor : Qt.PointingHandCursor
-              enabled: !PlexCore.PlexState.playing
-              onEntered: root.focusItem(mediaRow.index)
-              onClicked: PlexCore.PlexState.playItem(mediaRow.modelData, root.playbackMode)
-            }
-
-            Text {
-              id: kindIcon
-              width: Style.space(24)
-              anchors.left: parent.left
-              anchors.leftMargin: Style.space(10)
-              anchors.verticalCenter: parent.verticalCenter
-              text: Model.itemIcon(mediaRow.modelData.kind)
-              textFormat: Text.PlainText
-              color: mediaRow.modelData.isNew ? Color.accent : root.dimForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.title
-              horizontalAlignment: Text.AlignHCenter
-            }
-
-            Column {
-              anchors.left: kindIcon.right
-              anchors.leftMargin: Style.space(8)
-              anchors.right: watchBadge.left
-              anchors.rightMargin: Style.space(10)
-              anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(1)
-
-              Text {
-                width: parent.width
-                text: Model.plainText(mediaRow.modelData.title, 256)
-                textFormat: Text.PlainText
-                color: mediaRow.modelData.watchState === "watched" ? root.dimForeground : root.contentForeground
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.body
-                font.bold: mediaRow.modelData.watchState !== "watched"
-                elide: Text.ElideRight
-              }
-
-              Text {
-                width: parent.width
-                text: Model.plainText(mediaRow.modelData.subtitle, 256)
-                  + (mediaRow.modelData.addedLabel === "" ? "" : " · " + Model.plainText(mediaRow.modelData.addedLabel, 80))
-                  + (mediaRow.modelData.playbackHint === "" ? "" : " · " + Model.plainText(mediaRow.modelData.playbackHint, 80))
-                textFormat: Text.PlainText
-                color: root.dimForeground
-                font.family: root.contentFontFamily
-                font.pixelSize: Style.font.caption
-                elide: Text.ElideRight
-              }
-            }
-
-            Button {
-              id: watchBadge
-              anchors.right: parent.right
-              anchors.rightMargin: Style.space(8)
-              anchors.verticalCenter: parent.verticalCenter
-              z: 1
-              text: Model.watchLabel(mediaRow.modelData.watchState)
-              tooltipText: mediaRow.modelData.watchState === "watched"
-                ? "Mark unwatched" : "Mark watched"
-              fontSize: Style.font.caption
-              foreground: mediaRow.modelData.isNew ? Color.accent : root.dimForeground
-              fontFamily: root.contentFontFamily
-              horizontalPadding: Style.space(6)
-              verticalPadding: Style.space(2)
-              bordered: true
-              active: PlexCore.PlexState.markingRatingKey === String(mediaRow.modelData.ratingKey)
-              enabled: !PlexCore.PlexState.playing && !PlexCore.PlexState.updating
-              onHovered: function(isHovered) {
-                if (isHovered) root.focusItem(mediaRow.index)
-              }
-              onClicked: {
-                root.focusItem(mediaRow.index)
-                PlexCore.PlexState.toggleWatchState(mediaRow.modelData)
-              }
-            }
+          items: root.visibleItems
+          selectedIndex: root.selectedIndex
+          cursorActive: root.cursorActive
+          foreground: root.contentForeground
+          dimForeground: root.dimForeground
+          fontFamily: root.contentFontFamily
+          onFocusRequested: function(index) { root.focusItem(index) }
+          onPlayRequested: function(item) {
+            PlexCore.PlexState.playItem(item, root.playbackMode)
+          }
+          onToggleWatchRequested: function(item) {
+            PlexCore.PlexState.toggleWatchState(item)
           }
         }
 
@@ -803,7 +628,7 @@ Panel {
             anchors.right: settingsButton.left
             anchors.rightMargin: Style.space(6)
             anchors.verticalCenter: parent.verticalCenter
-            text: "[ ] views · / find · J/K move · Enter play · X mark · ? keys"
+            text: "[ ] views · / find · J/K move · ↵ play · X mark · B browse · ? keys"
             textFormat: Text.PlainText
             color: root.dimForeground
             font.family: root.contentFontFamily
@@ -827,309 +652,27 @@ Panel {
 
       }
 
-      Rectangle {
+      KeybindingsOverlay {
+        id: keybindingsOverlay
         visible: root.helpOpen
         anchors.fill: parent
         z: 20
-        color: Color.background
-
-        Column {
-          anchors.fill: parent
-          spacing: Style.space(10)
-
-          Item {
-            width: parent.width
-            implicitHeight: Math.max(helpTitle.implicitHeight, closeHelpButton.implicitHeight)
-
-            Text {
-              id: helpTitle
-              anchors.left: parent.left
-              anchors.verticalCenter: parent.verticalCenter
-              text: "Keybindings"
-              textFormat: Text.PlainText
-              color: root.contentForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.title
-              font.bold: true
-            }
-
-            Button {
-              id: closeHelpButton
-              anchors.right: parent.right
-              anchors.verticalCenter: parent.verticalCenter
-              text: "Close  ?"
-              fontSize: Style.font.caption
-              foreground: root.contentForeground
-              fontFamily: root.contentFontFamily
-              bordered: true
-              onClicked: root.closeHelp()
-            }
-          }
-
-          TextField {
-            id: helpSearch
-            width: parent.width
-            text: root.helpQuery
-            maximumLength: 80
-            placeholderText: "Search keybindings…  /"
-            foreground: root.contentForeground
-            font.family: root.contentFontFamily
-            onTextChanged: root.helpQuery = text
-            Keys.onEscapePressed: {
-              if (text !== "") text = ""
-              else root.closeHelp()
-            }
-            Keys.onPressed: function(event) {
-              if (event.text === "?") {
-                root.closeHelp()
-                event.accepted = true
-              }
-            }
-          }
-
-          Text {
-            visible: root.filteredHelpBindings.length === 0
-            width: parent.width
-            text: "No matching keybindings"
-            textFormat: Text.PlainText
-            color: root.dimForeground
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.body
-            horizontalAlignment: Text.AlignHCenter
-          }
-
-          ListView {
-            width: parent.width
-            height: parent.height - y
-            clip: true
-            spacing: Style.space(4)
-            model: root.groupedHelpBindings
-            boundsBehavior: Flickable.StopAtBounds
-
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
-
-            delegate: Item {
-              id: helpRow
-              required property var modelData
-              width: ListView.view.width
-              implicitHeight: modelData.kind === "header"
-                ? helpSectionHeader.implicitHeight + Style.space(8)
-                : Math.max(bindingKey.implicitHeight, bindingAction.implicitHeight) + Style.space(14)
-
-              PanelSectionHeader {
-                id: helpSectionHeader
-                visible: helpRow.modelData.kind === "header"
-                anchors.left: parent.left
-                anchors.leftMargin: Style.space(4)
-                anchors.bottom: parent.bottom
-                text: Model.plainText(helpRow.modelData.category, 40).toUpperCase()
-                foreground: root.contentForeground
-                fontFamily: root.contentFontFamily
-              }
-
-              Rectangle {
-                visible: helpRow.modelData.kind === "binding"
-                anchors.fill: parent
-                radius: Style.cornerRadius
-                color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.05)
-
-                Text {
-                  id: bindingKey
-                  width: Style.space(100)
-                  anchors.left: parent.left
-                  anchors.leftMargin: Style.space(10)
-                  anchors.verticalCenter: parent.verticalCenter
-                  text: Model.plainText(helpRow.modelData.keys, 40)
-                  textFormat: Text.PlainText
-                  color: Color.accent
-                  font.family: root.contentFontFamily
-                  font.pixelSize: Style.font.bodySmall
-                  font.bold: true
-                  elide: Text.ElideRight
-                }
-
-                Text {
-                  id: bindingAction
-                  anchors.left: bindingKey.right
-                  anchors.right: parent.right
-                  anchors.rightMargin: Style.space(10)
-                  anchors.verticalCenter: parent.verticalCenter
-                  text: Model.plainText(helpRow.modelData.action, 120)
-                  textFormat: Text.PlainText
-                  color: root.contentForeground
-                  font.family: root.contentFontFamily
-                  font.pixelSize: Style.font.bodySmall
-                  elide: Text.ElideRight
-                }
-              }
-            }
-          }
-        }
+        foreground: root.contentForeground
+        dimForeground: root.dimForeground
+        fontFamily: root.contentFontFamily
+        onCloseRequested: root.closeHelp()
       }
 
-      Rectangle {
-        visible: root.settingsOpen
+      ConnectionSettings {
+        id: settingsOverlay
         anchors.fill: parent
         z: 30
-        color: Color.background
-
-        Flickable {
-          anchors.fill: parent
-          contentWidth: width
-          contentHeight: settingsColumn.implicitHeight
-          clip: true
-          boundsBehavior: Flickable.StopAtBounds
-          interactive: contentHeight > height
-
-          Column {
-            id: settingsColumn
-            width: parent.width
-            spacing: Style.space(10)
-
-            PanelHero {
-              width: parent.width
-              iconComponent: plexIcon
-              title: "Plex"
-              meta: PlexCore.PlexState.configured ? "Connection settings" : "Connect to Plex"
-              foreground: root.contentForeground
-              fontFamily: root.contentFontFamily
-            }
-
-            PanelSeparator { foreground: root.contentForeground }
-
-            PanelSectionHeader {
-              width: parent.width
-              text: "SERVER"
-              foreground: root.contentForeground
-              fontFamily: root.contentFontFamily
-            }
-
-            TextField {
-              id: serverField
-              width: parent.width
-              placeholderText: "http://plex-server:32400"
-              maximumLength: 512
-              foreground: root.contentForeground
-              font.family: root.contentFontFamily
-              enabled: !PlexCore.PlexState.updating
-              inputMethodHints: Qt.ImhUrlCharactersOnly
-              onAccepted: tokenField.forceActiveFocus()
-              Keys.onEscapePressed: root.closeSettings()
-            }
-
-            PanelSectionHeader {
-              width: parent.width
-              text: "PLEX TOKEN"
-              foreground: root.contentForeground
-              fontFamily: root.contentFontFamily
-            }
-
-            TextField {
-              id: tokenField
-              width: parent.width
-              placeholderText: PlexCore.PlexState.configured
-                ? "Leave blank to keep the saved token" : "Paste your Plex token"
-              password: true
-              maximumLength: 256
-              foreground: root.contentForeground
-              font.family: root.contentFontFamily
-              enabled: !PlexCore.PlexState.updating
-              onAccepted: root.submitSetup()
-              Keys.onEscapePressed: root.closeSettings()
-            }
-
-            Text {
-              visible: PlexCore.PlexState.configured
-              width: parent.width
-              text: root.librarySummary()
-              textFormat: Text.PlainText
-              color: root.dimForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              wrapMode: Text.WordWrap
-            }
-
-            Text {
-              visible: PlexCore.PlexState.lastError !== ""
-              width: parent.width
-              text: PlexCore.PlexState.safeText(PlexCore.PlexState.lastError, 220)
-              textFormat: Text.PlainText
-              color: root.urgentForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              wrapMode: Text.WordWrap
-            }
-
-            Text {
-              visible: PlexCore.PlexState.setupMessage !== ""
-              width: parent.width
-              text: PlexCore.PlexState.safeText(PlexCore.PlexState.setupMessage, 220)
-              textFormat: Text.PlainText
-              color: Color.accent
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.bodySmall
-              wrapMode: Text.WordWrap
-            }
-
-            Button {
-              id: saveSettingsButton
-              width: parent.width
-              text: PlexCore.PlexState.configuring ? "Testing connection…" : "Test and save"
-              iconText: PlexCore.PlexState.configuring ? "󰑐" : ""
-              iconSpinning: PlexCore.PlexState.configuring
-              foreground: root.contentForeground
-              fontFamily: root.contentFontFamily
-              bordered: true
-              focusable: true
-              enabled: !PlexCore.PlexState.updating
-              onClicked: root.submitSetup()
-            }
-
-            Row {
-              visible: PlexCore.PlexState.configured
-              width: parent.width
-              spacing: Style.space(5)
-
-              Button {
-                id: closeSettingsButton
-                width: (parent.width - parent.spacing) / 2
-                text: "Close"
-                foreground: root.contentForeground
-                fontFamily: root.contentFontFamily
-                bordered: true
-                focusable: true
-                enabled: !PlexCore.PlexState.updating
-                onClicked: root.closeSettings()
-              }
-
-              Button {
-                id: clearSettingsButton
-                width: (parent.width - parent.spacing) / 2
-                text: root.confirmClear ? "Confirm remove" : "Remove credentials"
-                foreground: root.confirmClear ? root.urgentForeground : root.contentForeground
-                fontFamily: root.contentFontFamily
-                bordered: true
-                focusable: true
-                enabled: !PlexCore.PlexState.updating
-                onClicked: {
-                  if (root.confirmClear) {
-                    if (PlexCore.PlexState.clearConfiguration()) root.confirmClear = false
-                  } else root.confirmClear = true
-                }
-              }
-            }
-
-            Text {
-              width: parent.width
-              text: "The token is sent to the helper over stdin and stored in the desktop secret service. It is never written to the plugin settings, command line, logs, or cache. A failed test keeps the previous connection."
-              textFormat: Text.PlainText
-              color: root.dimForeground
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-              wrapMode: Text.WordWrap
-            }
-          }
-        }
+        foreground: root.contentForeground
+        dimForeground: root.dimForeground
+        urgentForeground: root.urgentForeground
+        fontFamily: root.contentFontFamily
+        iconComponent: plexIcon
+        onDismissRequested: root.close()
       }
     }
   }

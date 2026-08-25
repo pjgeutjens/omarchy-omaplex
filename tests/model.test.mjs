@@ -29,7 +29,7 @@ const document = {
       ratingKey: "43",
       kind: "show",
       title: "Silo",
-      subtitle: "Series · S02E02 · Order",
+      subtitle: "Show · S02E02 · Order",
       addedAt: "2026-08-23T09:00:00Z",
       addedLabel: "Yesterday",
       watchState: "watched",
@@ -67,7 +67,7 @@ test("fuzzy-matches compact media metadata by term", () => {
   const item = model.normalizeDocument(document).items[0];
   assert.equal(model.matchesMediaQuery(item, "arrival 2016"), true);
   assert.equal(model.matchesMediaQuery(item, "arvl"), true);
-  assert.equal(model.matchesMediaQuery(item, "series s01"), false);
+  assert.equal(model.matchesMediaQuery(item, "show s01"), false);
 });
 
 test("reports source and freshness labels", () => {
@@ -108,7 +108,7 @@ test("normalizes bounded activity views and browse pages", () => {
   const search = model.normalizeBrowseDocument({
     ...browse,
     kind: "search",
-    query: "series s01",
+    query: "show s01",
   });
   assert.equal(search.kind, "search");
 });

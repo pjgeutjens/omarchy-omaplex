@@ -293,8 +293,8 @@ Item {
 
               Text {
                 text: root.inSeries ? "EPISODES"
-                  : (root.searching ? (root.searchScope === "movies" ? "SEARCH MOVIES" : "SEARCH SERIES & EPISODES")
-                    : (root.browseKind === "movies" ? "ALL MOVIES" : "ALL SERIES"))
+                  : (root.searching ? (root.searchScope === "movies" ? "SEARCH MOVIES" : "SEARCH SHOWS & EPISODES")
+                    : (root.browseKind === "movies" ? "ALL MOVIES" : "ALL SHOWS"))
                 textFormat: Text.PlainText
                 color: root.onScrimDim
                 font.family: Style.font.family
@@ -329,7 +329,7 @@ Item {
             }
 
             Button {
-              text: "Series"
+              text: "Shows"
               foreground: root.onScrim
               fontFamily: Style.font.family
               bordered: true
@@ -348,8 +348,8 @@ Item {
               width: Math.min(parent.width * 0.58, Style.space(520))
               text: root.query
               maximumLength: 80
-              placeholderText: root.inSeries ? "Search this series  /"
-                : (root.searchScope === "movies" ? "Fuzzy-search movies  /" : "Fuzzy-search series  /")
+              placeholderText: root.inSeries ? "Search this show  /"
+                : (root.searchScope === "movies" ? "Fuzzy-search movies  /" : "Fuzzy-search shows  /")
               foreground: root.onScrim
               font.family: Style.font.family
               onTextChanged: {
@@ -510,7 +510,7 @@ Item {
           Text {
             id: browserKeys
             width: parent.width
-            text: "M Movies · S Series · / Search selected scope · N/P pages · Esc close"
+            text: "M Movies · S Shows · / Search selected scope · N/P pages · Esc close"
             textFormat: Text.PlainText
             color: root.onScrimDim
             font.family: Style.font.family

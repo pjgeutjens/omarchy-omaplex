@@ -58,8 +58,13 @@ BarWidget {
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.MiddleButton) PlexCore.PlexState.refresh()
       else if (buttonCode === Qt.RightButton) {
-        PlexCore.PlexState.settingsRequested = true
-        root.open()
+        var panel = panelLoader.item
+        if (panel && panel.opened && panel.settingsOpen === true)
+          panel.close()
+        else {
+          PlexCore.PlexState.settingsRequested = true
+          root.open()
+        }
       }
       else root.toggle()
     }

@@ -1,12 +1,12 @@
 # Omaplex
 
-A right-side Omarchy bar widget with bounded Continue Watching, combined Recently Added, Recent Movies, and Recent Series lists. Every row says `Movie` or `Series` and has an explicit `UNWATCHED`, `STARTED`, or `WATCHED` label. Continue Watching merges Plex's in-progress and On Deck items, deduplicates each series, and sorts them newest-viewed first. Combined Recently Added is newest-added first. The separate movie and series views prioritize unfinished items. Multiple newly added episodes from one show collapse into the newest show row.
+A right-side Omarchy bar widget with bounded Continue Watching, combined Recently Added, Recent Movies, and Recent Shows lists. Every row says `Movie` or `Show` and has an explicit `UNWATCHED`, `STARTED`, or `WATCHED` label. Continue Watching merges Plex's in-progress and On Deck items, deduplicates each show, and sorts them newest-viewed first. Combined Recently Added is newest-added first. The separate movie and show views prioritize unfinished items. Multiple newly added episodes from one show collapse into the newest show row.
 
-Series rows use the matching Plex On Deck episode when one is available. Its play action resumes the current episode or starts the next one.
+Show rows use the matching Plex On Deck episode when one is available. Its play action resumes the current episode or starts the next one.
 
 Click a row to stream it through `mpv`. Choose Windowed for a normal floating, movable window or Fullscreen before playback. Windowed mode remembers its last compositor position and size for the next launch; if that rectangle is no longer visible on a connected monitor, only the saved size is used. Press `O` to open the same item in Plex Web.
 
-Browse All opens a separate fullscreen Omarchy panel. It searches and pages through the complete movie or series library without loading the full catalogue into the bar popup. Opening a series drills into its episodes.
+Browse All opens a separate fullscreen Omarchy panel. It searches and pages through the complete movie or show library without loading the full catalogue into the bar popup. Opening a show drills into its episodes.
 
 `mpv` keeps its built-in on-screen controller and default keyboard bindings. Use Space for pause, the arrow keys to seek, `#` to choose an audio track, `J` to choose a subtitle track, and `F` to toggle fullscreen. These track controls cover audio and embedded subtitles in the selected media part; Plex sidecar subtitle tracks are also sent to `mpv` through the private loopback proxy.
 
@@ -39,7 +39,7 @@ Open the Plex widget after installation. On first launch it opens Connection set
 2. Paste an `X-Plex-Token`.
 3. Select **Test and save**.
 
-The connection is tested before anything is replaced. The plugin discovers every movie and series library on the server, saves their section IDs, and immediately loads the lists. Open Connection settings later with `,` or the small settings button in the panel footer. When editing a working connection, leave the token blank to keep the saved token.
+The connection is tested before anything is replaced. The plugin discovers every movie and show library on the server, saves their section IDs, and immediately loads the lists. Open Connection settings later with `,` or the small settings button in the panel footer. When editing a working connection, leave the token blank to keep the saved token.
 
 The server origin and discovered section IDs go to `~/.config/omaplex/config.json`; the last windowed player rectangle goes to `player-window.json` in the same private directory. The token goes to the desktop secret service. It isn't written to Omarchy settings, cache files, URLs, logs, IPC output, or process arguments. Removing credentials from Connection settings requires a confirmation click and clears both the saved token and Plex data while retaining the player geometry preference.
 
@@ -62,13 +62,13 @@ For development or migration, the helper can import the four `PLEX_` values show
 - Up/Down or J/K: move the selected row
 - Enter or click: play the selected item
 - X or click the watch-state badge: toggle the selected item between watched and unwatched
-- [ / ]: move between Continue, Added, Movies, and Series (H/L remain available to Omarchy for switching panels)
+- [ / ]: move between Continue, Added, Movies, and Shows (H/L remain available to Omarchy for switching panels)
 - /: search the rows in the current compact view
 - T or the panel button: show or hide watched items
 - C: Continue Watching
 - A: combined Recently Added
 - M: recently added movies
-- S: recently added series
+- S: recently added shows
 - B or Browse All: open the fullscreen library browser
 - ?: toggle the searchable keybindings view
 - The keybindings view opens with its search field focused
@@ -77,14 +77,14 @@ For development or migration, the helper can import the four `PLEX_` values show
 - F: select Fullscreen playback
 - O: open the selected item in Plex Web
 - R: refresh the displayed Plex data
-- U or Scan all: discover and scan every movie and series library
+- U or Scan all: discover and scan every movie and show library
 - Escape: close the panel
 
 The panel reads `~/.cache/omaplex/recent.json` before it contacts Plex. A failed refresh keeps the last successful list and labels it offline.
 
-Every 15 minutes, the plugin asks Plex for its current library sections and starts a scan for every numeric movie and series section it discovers. It does not assume fixed section IDs. After Plex accepts the asynchronous scan, the plugin refreshes its displayed data twice while the scan settles. `U` triggers the same process immediately; ordinary `R` remains a lightweight data refresh.
+Every 15 minutes, the plugin asks Plex for its current library sections and starts a scan for every numeric movie and show section it discovers. It does not assume fixed section IDs. After Plex accepts the asynchronous scan, the plugin refreshes its displayed data twice while the scan settles. `U` triggers the same process immediately; ordinary `R` remains a lightweight data refresh.
 
-In Browse All, select Movies or Series first, then `/` fuzzy-searches only that scope. M/S switch the unfiltered scope, N/P change pages, and Escape goes back or closes the browser. Season syntax applies to Series searches: a query such as `Alone S01` expands matching series into naturally ordered Season 1 episode results; `S01E03` can select one episode directly.
+In Browse All, select Movies or Shows first, then `/` fuzzy-searches only that scope. M/S switch the unfiltered scope, N/P change pages, and Escape goes back or closes the browser. Season syntax applies to Show searches: a query such as `Alone S01` expands matching shows into naturally ordered Season 1 episode results; `S01E03` can select one episode directly.
 
 ## Playback boundary
 

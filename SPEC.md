@@ -16,7 +16,7 @@ Version 0.2:
 
 - show a compact new-item count or Plex glyph in the bar;
 - opens a text-only panel with no posters;
-- includes Continue Watching, Added, Movies, Series, and Browse All modes;
+- includes Continue Watching, Added, Movies, Shows, and Browse All modes;
 - combine both media types by Plex `addedAt`, newest first;
 - collapse multiple recent episodes of the same show into one show entry;
 - label a completely unwatched item added within the last 30 days as new;
@@ -27,7 +27,7 @@ Version 0.2:
 - reports playback progress and watched completion to Plex;
 - lets the user mark any compact-list item watched or unwatched;
 - keeps Plex Web as an explicit item action;
-- discovers and scans every movie and series library, with explicit confirmation that Plex accepted the request rather than claiming the scan finished;
+- discovers and scans every movie and show library, with explicit confirmation that Plex accepted the request rather than claiming the scan finished;
 - exposes `open`, `close`, `toggle`, `refresh`, `scan`, `settings`, and `status` through Omarchy Shell IPC.
 
 “Recently added” means added to this Plex server. It does not mean a new cinema, streaming, or broadcast release.
@@ -43,7 +43,7 @@ Version 0.2:
 - Up and Down or `j` and `k` move the selection.
 - Enter plays the selected item in the chosen window mode.
 - `x` toggles the selected item between watched and unwatched; the watch-state badge performs the same action.
-- `c`, `a`, `m`, and `s` select Continue, Added, Movies, and Series.
+- `c`, `a`, `m`, and `s` select Continue, Added, Movies, and Shows.
 - `b` opens Browse All, `t` toggles watched items, `o` opens Plex Web, and `,` opens settings.
 - `r` refreshes, `u` requests scans for all video libraries, and Escape closes the active view.
 
