@@ -627,7 +627,7 @@ Panel {
             anchors.right: settingsButton.left
             anchors.rightMargin: Style.space(6)
             anchors.verticalCenter: parent.verticalCenter
-            text: "[ ] views · / find · J/K move · ↵ play · X mark · B browse · ? keys"
+            text: "[ ] views · / find · J/K move · ↵ play · X toggle · B browse · ? keys"
             textFormat: Text.PlainText
             color: root.dimForeground
             font.family: root.contentFontFamily
