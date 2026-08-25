@@ -8,6 +8,8 @@ BarWidget {
   id: root
   moduleName: "io.github.pjgeutjens.omaplex"
 
+  readonly property color plexGold: "#e5a00d"
+
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item
     ? panelLoader.item.popoutSwitchClosing === true
@@ -53,6 +55,7 @@ BarWidget {
     hasVisualContent: true
     fixedWidth: root.vertical ? -1 : plexRow.implicitWidth + button.scaledHorizontalMargin * 2
     active: PlexCore.PlexState.newCount > 0
+    activeColor: root.plexGold
     tooltipText: PlexCore.PlexState.tooltipText
 
     onPressed: function(buttonCode) {
