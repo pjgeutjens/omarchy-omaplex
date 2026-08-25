@@ -41,7 +41,7 @@ Open the Plex widget after installation. On first launch it opens Connection set
 
 The connection is tested before anything is replaced. The plugin discovers the Plex server's friendly name and every movie and show library, saves that non-secret connection metadata, and immediately loads the lists. Open Connection settings later with `,` or the small settings button in the panel footer. When editing a working connection, leave the token blank to keep the saved token.
 
-Connection settings has two appearance toggles. **Show new-item count** controls the number beside the bar icon. **Use Plex gold for new items** switches between Plex gold and the Omarchy theme's active color. Both are enabled by default and stored with the widget entry in `~/.config/omarchy/shell.json`.
+Connection settings has two appearance toggles. **Show new-item count** controls the number beside the bar icon. **Override theme colors for new items** forces the Plex logo yellow instead of using the Omarchy theme's active color. Both are enabled by default and stored with the widget entry in `~/.config/omarchy/shell.json`.
 
 The server origin and discovered section IDs go to `~/.config/omaplex/config.json`; the last windowed player rectangle goes to `player-window.json` in the same private directory. The token goes to the desktop secret service. It isn't written to Omarchy settings, cache files, URLs, logs, IPC output, or process arguments. Removing credentials from Connection settings requires a confirmation click and clears both the saved token and Plex data while retaining the player geometry preference.
 
