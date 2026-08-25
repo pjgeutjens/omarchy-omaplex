@@ -11,7 +11,7 @@ for file in ./*.qml; do
   qmllint -I "$omarchy_path/shell" "$file"
 done
 
-python3 -m py_compile bin/plex-recently-added
+python3 -m py_compile bin/omaplex
 python3 -m unittest discover -s tests -p 'test_*.py'
 node --test tests/model.test.mjs
 

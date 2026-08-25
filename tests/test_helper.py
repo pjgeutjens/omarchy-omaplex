@@ -14,7 +14,7 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-LOADER = importlib.machinery.SourceFileLoader("plex_recently_added", str(ROOT / "bin" / "plex-recently-added"))
+LOADER = importlib.machinery.SourceFileLoader("plex_recently_added", str(ROOT / "bin" / "omaplex"))
 SPEC = importlib.util.spec_from_loader(LOADER.name, LOADER)
 assert SPEC is not None
 plex = importlib.util.module_from_spec(SPEC)

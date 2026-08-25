@@ -6,7 +6,7 @@ import "." as PlexCore
 
 BarWidget {
   id: root
-  moduleName: "io.github.pjgeutjens.plex-recently-added"
+  moduleName: "io.github.pjgeutjens.omaplex"
 
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item

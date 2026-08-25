@@ -8,8 +8,8 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "io.github.pjgeutjens.plex-recently-added"
-  ipcTarget: "io.github.pjgeutjens.plex-recently-added"
+  moduleName: "io.github.pjgeutjens.omaplex"
+  ipcTarget: "io.github.pjgeutjens.omaplex"
   manageIpc: false
 
   property var anchorItem: null

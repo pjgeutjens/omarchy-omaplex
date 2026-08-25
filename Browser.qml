@@ -35,8 +35,8 @@ Item {
   property string _requestedParent: ""
 
   readonly property string pluginRoot: Quickshell.env("HOME")
-    + "/.config/omarchy/plugins/io.github.pjgeutjens.plex-recently-added"
-  readonly property string helperCommand: pluginRoot + "/bin/plex-recently-added"
+    + "/.config/omarchy/plugins/io.github.pjgeutjens.omaplex"
+  readonly property string helperCommand: pluginRoot + "/bin/omaplex"
   readonly property bool inSeries: browseKind === "episodes"
   readonly property bool searching: !inSeries && query.trim() !== ""
   readonly property string requestKind: searching ? "search" : browseKind
@@ -71,7 +71,7 @@ Item {
 
   function dismiss() {
     if (root.shell && typeof root.shell.hide === "function")
-      root.shell.hide((root.manifest && root.manifest.id) || "io.github.pjgeutjens.plex-recently-added")
+      root.shell.hide((root.manifest && root.manifest.id) || "io.github.pjgeutjens.omaplex")
     else close()
   }
 

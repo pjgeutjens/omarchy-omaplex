@@ -1,10 +1,10 @@
-# Plex for Omarchy: current spec
+# Omaplex: current spec
 
 ## Repository and plugin identity
 
-- Repository: `pjgeutjens/omarchy-plex-recently-added`
-- Local source: `~/personal/local-tools/omarchy-plex-recently-added`
-- Proposed plugin ID: `io.github.pjgeutjens.plex-recently-added`
+- Repository: `pjgeutjens/omarchy-omaplex`
+- Local source: `~/personal/local-tools/omarchy-omaplex`
+- Proposed plugin ID: `io.github.pjgeutjens.omaplex`
 - Omarchy kind: `bar-widget`, with a panel opened by the bar widget
 - First target: Omarchy Quattro and its current schema version 1 plugin API
 
@@ -96,7 +96,7 @@ BarWidget.qml
 Panel.qml
 PlexState.qml
 Model.js
-bin/plex-recently-added
+bin/omaplex
 tests/
 scripts/validate.sh
 README.md

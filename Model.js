@@ -173,9 +173,9 @@ function relativeTime(timestamp, nowMs) {
 }
 
 function tooltip(document, updating) {
-  if (!document.configured) return "Plex Recently Added · Setup required"
-  if (updating) return "Plex Recently Added · Updating…"
-  if (document.items.length === 0) return "Plex Recently Added · No items"
+  if (!document.configured) return "Omaplex · Setup required"
+  if (updating) return "Omaplex · Updating…"
+  if (document.items.length === 0) return "Omaplex · No items"
   var count = document.newCount
-  return "Plex Recently Added · " + count + (count === 1 ? " new item" : " new items")
+  return "Omaplex · " + count + (count === 1 ? " new item" : " new items")
 }

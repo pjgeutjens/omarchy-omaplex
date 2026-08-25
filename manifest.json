@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "io.github.pjgeutjens.plex-recently-added",
+  "id": "io.github.pjgeutjens.omaplex",
   "name": "Plex",
   "version": "0.2.0",
   "author": "Pieter Geutjens",

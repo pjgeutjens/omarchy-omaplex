@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 
-PLUGIN_ID = "io.github.pjgeutjens.plex-recently-added"
+PLUGIN_ID = "io.github.pjgeutjens.omaplex"
 SCHEMA_VERSION = 1
 MAX_API_BYTES = 2 * 1024 * 1024
 MAX_CACHE_BYTES = 256 * 1024
@@ -51,7 +51,7 @@ MAX_FIELD = 256
 REQUEST_TIMEOUT = 8
 STALE_SECONDS = 15 * 60
 NEW_AGE_DAYS = 30
-CLIENT_ID = "omarchy-plex-recently-added"
+CLIENT_ID = "omarchy-omaplex"
 
 
 class PlexError(Exception):
@@ -92,12 +92,12 @@ def finite_integer(value: Any, default: int = 0) -> int:
 
 def config_home() -> Path:
     base = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
-    return base / "plex-recently-added"
+    return base / "omaplex"
 
 
 def cache_home() -> Path:
     base = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
-    return base / "plex-recently-added"
+    return base / "omaplex"
 
 
 @contextlib.contextmanager
@@ -280,7 +280,7 @@ def section_ids(value: Any) -> list[str]:
 
 def validate_config(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("schemaVersion") != SCHEMA_VERSION:
-        raise ConfigurationError("Plex Recently Added is not configured")
+        raise ConfigurationError("Omaplex is not configured")
     movies = section_ids(value.get("movieSectionIds"))
     shows = section_ids(value.get("tvSectionIds"))
     if not movies and not shows:
@@ -362,7 +362,7 @@ class SecretStore:
             raise ConfigurationError("The Plex token has an invalid format")
         try:
             return_code = run_no_output(
-                ["secret-tool", "store", "--label=Plex Recently Added token", *self.attributes],
+                ["secret-tool", "store", "--label=Omaplex token", *self.attributes],
                 input_bytes=token.encode("utf-8"),
                 timeout=15,
             )
@@ -963,7 +963,7 @@ def clear_configuration(store: SecretStore | None = None) -> dict[str, Any]:
 def client_from_saved(store: SecretStore | None = None) -> tuple[PlexClient, dict[str, Any]]:
     config = load_config()
     if config is None:
-        raise ConfigurationError("Plex Recently Added is not configured")
+        raise ConfigurationError("Omaplex is not configured")
     token = (store or SecretStore()).lookup()
     if not token:
         raise ConfigurationError("No Plex token was found in the desktop secret service")
@@ -1559,7 +1559,7 @@ def mpv_arguments(
         "--osc=yes",
         "--input-default-bindings=yes",
         "--osd-level=1",
-        "--title=Plex Recently Added",
+        "--title=Omaplex",
     ]
     if mode == "fullscreen":
         arguments.extend([
@@ -1897,7 +1897,7 @@ def command_scan() -> int:
 
 
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(prog="plex-recently-added")
+    result = argparse.ArgumentParser(prog="omaplex")
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("status")
     commands.add_parser("refresh")
@@ -1970,7 +1970,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "open-web":
             config = load_config()
             if config is None:
-                raise ConfigurationError("Plex Recently Added is not configured")
+                raise ConfigurationError("Omaplex is not configured")
             url = plex_web_url(config, args.rating_key)
             try:
                 return_code = run_no_output(["xdg-open", url], timeout=10)

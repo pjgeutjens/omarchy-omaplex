@@ -1,4 +1,4 @@
-# Plex for Omarchy
+# Omaplex
 
 A right-side Omarchy bar widget with bounded Continue Watching, combined Recently Added, Recent Movies, and Recent Series lists. Every row says `Movie` or `Series` and has an explicit `UNWATCHED`, `STARTED`, or `WATCHED` label. Continue Watching merges Plex's in-progress and On Deck items, deduplicates each series, and sorts them newest-viewed first. Combined Recently Added is newest-added first. The separate movie and series views prioritize unfinished items. Multiple newly added episodes from one show collapse into the newest show row.
 
@@ -22,10 +22,10 @@ Browse All opens a separate fullscreen Omarchy panel. It searches and pages thro
 Copy or symlink this repository to:
 
 ```text
-~/.config/omarchy/plugins/io.github.pjgeutjens.plex-recently-added
+~/.config/omarchy/plugins/io.github.pjgeutjens.omaplex
 ```
 
-Then add `io.github.pjgeutjens.plex-recently-added` to the right section of `~/.config/omarchy/shell.json`. Saved user plugin files and `shell.json` changes reload automatically. A manual rescan is also available:
+Then add `io.github.pjgeutjens.omaplex` to the right section of `~/.config/omarchy/shell.json`. Saved user plugin files and `shell.json` changes reload automatically. A manual rescan is also available:
 
 ```bash
 omarchy-shell shell rescanPlugins
@@ -41,7 +41,7 @@ Open the Plex widget after installation. On first launch it opens Connection set
 
 The connection is tested before anything is replaced. The plugin discovers every movie and series library on the server, saves their section IDs, and immediately loads the lists. Open Connection settings later with `,` or the small settings button in the panel footer. When editing a working connection, leave the token blank to keep the saved token.
 
-The server origin and discovered section IDs go to `~/.config/plex-recently-added/config.json`; the last windowed player rectangle goes to `player-window.json` in the same private directory. The token goes to the desktop secret service. It isn't written to Omarchy settings, cache files, URLs, logs, IPC output, or process arguments. Removing credentials from Connection settings requires a confirmation click and clears both the saved token and Plex data while retaining the player geometry preference.
+The server origin and discovered section IDs go to `~/.config/omaplex/config.json`; the last windowed player rectangle goes to `player-window.json` in the same private directory. The token goes to the desktop secret service. It isn't written to Omarchy settings, cache files, URLs, logs, IPC output, or process arguments. Removing credentials from Connection settings requires a confirmation click and clears both the saved token and Plex data while retaining the player geometry preference.
 
 Plain HTTP is allowed for a trusted LAN Plex server. It exposes Plex traffic to that LAN, so use HTTPS for untrusted networks.
 
@@ -50,7 +50,7 @@ Plain HTTP is allowed for a trusted LAN Plex server. It exposes Plex traffic to 
 For development or migration, the helper can import the four `PLEX_` values shown in `.env.example`. This is optional; the plugin does not depend on DailyDash or another project's `.env` file.
 
 ```bash
-~/.config/omarchy/plugins/io.github.pjgeutjens.plex-recently-added/bin/plex-recently-added \
+~/.config/omarchy/plugins/io.github.pjgeutjens.omaplex/bin/omaplex \
   configure-from-env /path/to/project/.env
 ```
 
@@ -80,7 +80,7 @@ For development or migration, the helper can import the four `PLEX_` values show
 - U or Scan all: discover and scan every movie and series library
 - Escape: close the panel
 
-The panel reads `~/.cache/plex-recently-added/recent.json` before it contacts Plex. A failed refresh keeps the last successful list and labels it offline.
+The panel reads `~/.cache/omaplex/recent.json` before it contacts Plex. A failed refresh keeps the last successful list and labels it offline.
 
 Every 15 minutes, the plugin asks Plex for its current library sections and starts a scan for every numeric movie and series section it discovers. It does not assume fixed section IDs. After Plex accepts the asynchronous scan, the plugin refreshes its displayed data twice while the scan settles. `U` triggers the same process immediately; ordinary `R` remains a lightweight data refresh.
 
@@ -107,14 +107,14 @@ This runs Omarchy's plugin validator, `qmllint`, Python tests, and the Node test
 Close any player window first, then remove the widget through Omarchy Plugin Control or run:
 
 ```bash
-omarchy plugin remove io.github.pjgeutjens.plex-recently-added --yes
+omarchy plugin remove io.github.pjgeutjens.omaplex --yes
 ```
 
 Removal does not delete the saved server settings, cached list, or secret-service token. Delete them when you want a complete reset:
 
 ```bash
-secret-tool clear service io.github.pjgeutjens.plex-recently-added
-rm -rf ~/.config/plex-recently-added ~/.cache/plex-recently-added
+secret-tool clear service io.github.pjgeutjens.omaplex
+rm -rf ~/.config/omaplex ~/.cache/omaplex
 ```
 
 The plugin installs no service, privileged file, or Hyprland rule.

@@ -49,8 +49,8 @@ Item {
   signal configurationFinished(bool success, string detail)
 
   readonly property string pluginRoot: Quickshell.env("HOME")
-    + "/.config/omarchy/plugins/io.github.pjgeutjens.plex-recently-added"
-  readonly property string helperCommand: pluginRoot + "/bin/plex-recently-added"
+    + "/.config/omarchy/plugins/io.github.pjgeutjens.omaplex"
+  readonly property string helperCommand: pluginRoot + "/bin/omaplex"
   readonly property bool scanning: scanProcess.running
   readonly property bool configuring: setupProcess.running
   readonly property bool clearingConfiguration: clearProcess.running
@@ -75,7 +75,7 @@ Item {
       return false
     routeProcess.command = [
       "timeout", "--signal=TERM", "5", "omarchy-shell", "shell", method,
-      "io.github.pjgeutjens.plex-recently-added"
+      "io.github.pjgeutjens.omaplex"
     ]
     routeProcess.running = true
     return true
@@ -256,7 +256,7 @@ Item {
   // singleton avoids duplicate target registration; panel open/close is
   // routed by Omarchy's shell summon/hide commands to the focused monitor.
   IpcHandler {
-    target: "io.github.pjgeutjens.plex-recently-added"
+    target: "io.github.pjgeutjens.omaplex"
 
     function open() { root.routeThroughShell("summon") }
     function close() { root.routeThroughShell("hide") }
