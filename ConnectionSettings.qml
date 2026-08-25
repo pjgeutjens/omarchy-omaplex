@@ -180,8 +180,8 @@ Rectangle {
       Toggle {
         id: plexGoldToggle
         width: parent.width
-        label: "Override theme colors for new items"
-        description: "Force the Plex logo yellow."
+        label: "Override theme colors"
+        description: "Force the Plex logo yellow when new items are available."
         checked: root.usePlexGoldForNewItems
         foreground: root.foreground
         fontFamily: root.fontFamily
