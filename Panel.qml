@@ -311,8 +311,6 @@ Panel {
           width: parent.width
           iconComponent: plexIcon
           title: "Plex"
-          detail: PlexCore.PlexState.configured && PlexCore.PlexState.connectionName !== ""
-            ? "Connected to " + PlexCore.PlexState.connectionName : ""
           meta: PlexCore.PlexState.safeText(
             PlexCore.PlexState.configured
               ? PlexCore.PlexState.freshnessText + " · " + root.sourceItems.length + " items"
@@ -531,6 +529,21 @@ Panel {
               font.pixelSize: Style.font.caption
               font.bold: true
             }
+
+            MouseArea {
+              id: sourceBadgeMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.ArrowCursor
+            }
+
+            PanelToolTip {
+              visible: sourceBadgeMouse.containsMouse
+              text: PlexCore.PlexState.connectionName !== ""
+                ? "Connected to " + PlexCore.PlexState.connectionName
+                : "Connected to Plex"
+              fontFamily: root.contentFontFamily
+            }
           }
 
           PanelActionButton {
@@ -542,6 +555,7 @@ Panel {
             foreground: root.contentForeground
             fontFamily: root.contentFontFamily
             size: Style.space(22)
+            bordered: true
             enabled: PlexCore.PlexState.configured && !PlexCore.PlexState.openingWeb
             onClicked: PlexCore.PlexState.openPlexWeb()
           }
