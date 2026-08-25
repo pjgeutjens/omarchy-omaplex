@@ -311,11 +311,11 @@ Panel {
           width: parent.width
           iconComponent: plexIcon
           title: "Plex"
+          detail: PlexCore.PlexState.configured && PlexCore.PlexState.connectionName !== ""
+            ? "Connected to " + PlexCore.PlexState.connectionName : ""
           meta: PlexCore.PlexState.safeText(
             PlexCore.PlexState.configured
-              ? (PlexCore.PlexState.connectionName !== ""
-                  ? "Connected to " + PlexCore.PlexState.connectionName + " · " : "")
-                + PlexCore.PlexState.freshnessText + " · " + root.sourceItems.length + " items"
+              ? PlexCore.PlexState.freshnessText + " · " + root.sourceItems.length + " items"
               : "Plex setup required",
             180
           )
@@ -512,7 +512,7 @@ Panel {
           Rectangle {
             id: sourceBadge
             width: sourceLabel.implicitWidth + Style.space(14)
-            height: Style.space(20)
+            height: Style.space(22)
             anchors.right: plexWebButton.left
             anchors.rightMargin: Style.space(4)
             anchors.verticalCenter: parent.verticalCenter
@@ -541,6 +541,7 @@ Panel {
             tooltipText: "Open Plex Web (P)"
             foreground: root.contentForeground
             fontFamily: root.contentFontFamily
+            size: Style.space(22)
             enabled: PlexCore.PlexState.configured && !PlexCore.PlexState.openingWeb
             onClicked: PlexCore.PlexState.openPlexWeb()
           }
