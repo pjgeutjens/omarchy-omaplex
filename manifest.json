@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.pjgeutjens.plex-recently-added",
+  "name": "Plex",
+  "version": "0.2.0",
+  "author": "Pieter Geutjens",
+  "license": "MIT",
+  "description": "Plex activity lists, fullscreen library browsing, and mpv playback.",
+  "kinds": [
+    "bar-widget",
+    "panel"
+  ],
+  "keepLoaded": false,
+  "entryPoints": {
+    "barWidget": "BarWidget.qml",
+    "panel": "Browser.qml"
+  },
+  "barWidget": {
+    "displayName": "Plex",
+    "description": "Continue watching, recently added media, and library browsing",
+    "category": "Media",
+    "aliases": [
+      "plex",
+      "movies",
+      "television"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
