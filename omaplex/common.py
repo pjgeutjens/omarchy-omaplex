@@ -101,6 +101,17 @@ def run_no_output(command: list[str], *, input_bytes: bytes | None = None, timeo
         return -1
 
 
+def launch_detached(command: list[str]) -> None:
+    subprocess.Popen(
+        command,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        close_fds=True,
+    )
+
+
 def run_bounded_output(command: list[str], *, maximum: int, timeout: float) -> tuple[int, bytes]:
     process = subprocess.Popen(
         command,

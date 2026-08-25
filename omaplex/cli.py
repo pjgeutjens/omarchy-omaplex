@@ -11,7 +11,7 @@ from omaplex.common import (
     PlexError,
     ResponseError,
     clean_text,
-    run_no_output,
+    launch_detached,
     wall_deadline,
 )
 from omaplex.config import load_config
@@ -125,12 +125,10 @@ def main(argv: list[str] | None = None) -> int:
                 raise ConfigurationError("Omaplex is not configured")
             url = plex_web_url(config, args.rating_key)
             try:
-                return_code = run_no_output(["xdg-open", url], timeout=10)
+                launch_detached(["xdg-open", url])
             except FileNotFoundError as error:
                 raise ConfigurationError("xdg-open is unavailable") from error
-            if return_code != 0:
-                raise ResponseError("Could not open Plex Web")
-            return return_code
+            return 0
         raise ConfigurationError("Unknown command")
     except PlexError as error:
         print(clean_text(error, 220), file=sys.stderr)

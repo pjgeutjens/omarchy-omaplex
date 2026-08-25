@@ -199,6 +199,15 @@ class PlexHelperTests(unittest.TestCase):
             with self.assertRaises(ConfigurationError):
                 playback_module.plex_web_url(config, "../42")
 
+            with (
+                mock.patch.object(cli_module, "load_config", return_value=config),
+                mock.patch.object(cli_module, "launch_detached") as launcher,
+            ):
+                self.assertEqual(cli_module.main(["open-web"]), 0)
+            launcher.assert_called_once_with(
+                ["xdg-open", "http://plex:32400/web/index.html"]
+            )
+
     def test_player_geometry_is_private_bounded_and_read_from_own_pid(self):
             geometry = {
                 "schemaVersion": 1,
