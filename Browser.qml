@@ -22,7 +22,6 @@ Item {
   property int limit: 40
   property int total: 0
   property int selectedIndex: 0
-  property string playbackMode: "windowed"
   property var items: []
   property bool loading: false
   property string error: ""
@@ -144,7 +143,7 @@ Item {
   function activate(item) {
     if (!item) return
     if (item.playable === false) openSeries(item)
-    else PlexCore.PlexState.playItem(item, playbackMode)
+    else PlexCore.PlexState.playItem(item, PlexCore.PlexState.playbackMode)
   }
 
   function previousPage() {
@@ -249,8 +248,6 @@ Item {
         if (text === "/") { searchField.forceActiveFocus(); event.accepted = true }
         else if (text === "m" || text === "M") { root.setKind("movies"); event.accepted = true }
         else if (text === "s" || text === "S") { root.setKind("shows"); event.accepted = true }
-        else if (text === "w" || text === "W") { root.playbackMode = "windowed"; event.accepted = true }
-        else if (text === "f" || text === "F") { root.playbackMode = "fullscreen"; event.accepted = true }
         else if (text === "n" || text === "N") { root.nextPage(); event.accepted = true }
         else if (text === "p" || text === "P") { root.previousPage(); event.accepted = true }
       }
@@ -340,12 +337,12 @@ Item {
 
           Item {
             width: parent.width
-            implicitHeight: Math.max(searchField.implicitHeight, playbackButtons.implicitHeight)
+            implicitHeight: searchField.implicitHeight
 
             TextField {
               id: searchField
               anchors.left: parent.left
-              width: Math.min(parent.width * 0.58, Style.space(520))
+              width: parent.width
               text: root.query
               maximumLength: 80
               placeholderText: root.inSeries ? "Search this show  /"
@@ -366,30 +363,6 @@ Item {
               }
             }
 
-            Row {
-              id: playbackButtons
-              anchors.right: parent.right
-              anchors.verticalCenter: parent.verticalCenter
-              spacing: Style.space(6)
-
-              Button {
-                text: "Windowed"
-                foreground: root.onScrim
-                fontFamily: Style.font.family
-                bordered: true
-                active: root.playbackMode === "windowed"
-                onClicked: root.playbackMode = "windowed"
-              }
-
-              Button {
-                text: "Fullscreen"
-                foreground: root.onScrim
-                fontFamily: Style.font.family
-                bordered: true
-                active: root.playbackMode === "fullscreen"
-                onClicked: root.playbackMode = "fullscreen"
-              }
-            }
           }
 
           Text {

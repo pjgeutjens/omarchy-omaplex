@@ -207,6 +207,10 @@ Item {
     return true
   }
 
+  function setPlaybackMode(mode) {
+    playbackMode = mode === "fullscreen" ? "fullscreen" : "windowed"
+  }
+
   function setWatchState(item, state) {
     if (!item || playbackProcess.running || refreshProcess.running || scanning || marking || settingsBusy)
       return false

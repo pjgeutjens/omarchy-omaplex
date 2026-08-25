@@ -16,7 +16,6 @@ Panel {
   property var hostWidget: null
   property int selectedIndex: 0
   property bool cursorActive: true
-  property string playbackMode: "windowed"
   property bool showWatched: true
   property bool helpOpen: false
   property bool mediaSearchOpen: false
@@ -95,7 +94,7 @@ Panel {
 
   function playSelection() {
     if (root.visibleItems.length > 0)
-      PlexCore.PlexState.playItem(root.visibleItems[selectedIndex], playbackMode)
+      PlexCore.PlexState.playItem(root.visibleItems[selectedIndex], PlexCore.PlexState.playbackMode)
   }
 
   function toggleSelectedWatchState() {
@@ -104,7 +103,7 @@ Panel {
   }
 
   function setPlaybackMode(mode) {
-    playbackMode = mode === "fullscreen" ? "fullscreen" : "windowed"
+    PlexCore.PlexState.setPlaybackMode(mode)
     keyCatcher.forceActiveFocus()
   }
 
@@ -326,9 +325,9 @@ Panel {
               PanelActionButton {
                 iconText: "\uEB4C" // cod-screen-full
                 tooltipText: "Fullscreen playback (F)"
-                foreground: root.playbackMode === "fullscreen" ? Color.accent : root.contentForeground
+                foreground: PlexCore.PlexState.playbackMode === "fullscreen" ? Color.accent : root.contentForeground
                 fontFamily: root.contentFontFamily
-                bordered: root.playbackMode === "fullscreen"
+                bordered: PlexCore.PlexState.playbackMode === "fullscreen"
                 enabled: !PlexCore.PlexState.playing
                 onClicked: root.setPlaybackMode("fullscreen")
               }
@@ -336,9 +335,9 @@ Panel {
               PanelActionButton {
                 iconText: "\uEB4D" // cod-screen-normal
                 tooltipText: "Windowed playback (W)"
-                foreground: root.playbackMode === "windowed" ? Color.accent : root.contentForeground
+                foreground: PlexCore.PlexState.playbackMode === "windowed" ? Color.accent : root.contentForeground
                 fontFamily: root.contentFontFamily
-                bordered: root.playbackMode === "windowed"
+                bordered: PlexCore.PlexState.playbackMode === "windowed"
                 enabled: !PlexCore.PlexState.playing
                 onClicked: root.setPlaybackMode("windowed")
               }
@@ -611,7 +610,7 @@ Panel {
           fontFamily: root.contentFontFamily
           onFocusRequested: function(index) { root.focusItem(index) }
           onPlayRequested: function(item) {
-            PlexCore.PlexState.playItem(item, root.playbackMode)
+            PlexCore.PlexState.playItem(item, PlexCore.PlexState.playbackMode)
           }
           onToggleWatchRequested: function(item) {
             PlexCore.PlexState.toggleWatchState(item)
