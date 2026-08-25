@@ -9,6 +9,7 @@ BarWidget {
   moduleName: "io.github.pjgeutjens.omaplex"
 
   readonly property color plexGold: "#e5a00d"
+  readonly property bool showNewItemCount: setting("showNewItemCount", true) !== false
 
   readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
   readonly property bool popoutSwitchClosing: panelLoader.item
@@ -88,7 +89,7 @@ BarWidget {
       }
 
       Text {
-        visible: !root.vertical && PlexCore.PlexState.newCount > 0
+        visible: !root.vertical && root.showNewItemCount && PlexCore.PlexState.newCount > 0
         text: String(PlexCore.PlexState.newCount)
         textFormat: Text.PlainText
         color: button.activeColor

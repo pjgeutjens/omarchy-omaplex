@@ -14,12 +14,14 @@ Rectangle {
   property color urgentForeground: Color.urgent
   property string fontFamily: Style.font.family
   property Component iconComponent
+  property bool showNewItemCount: true
 
   signal dismissRequested()
+  signal showNewItemCountRequested(bool value)
 
   readonly property bool inputFocused: serverField.activeFocus || tokenField.activeFocus
     || saveSettingsButton.activeFocus || closeSettingsButton.activeFocus
-    || clearSettingsButton.activeFocus
+    || clearSettingsButton.activeFocus || newItemCountToggle.activeFocus
   readonly property real contentImplicitHeight: settingsColumn.implicitHeight
 
   visible: opened
@@ -151,6 +153,25 @@ Rectangle {
         font.family: root.fontFamily
         font.pixelSize: Style.font.bodySmall
         wrapMode: Text.WordWrap
+      }
+
+      PanelSectionHeader {
+        width: parent.width
+        text: "APPEARANCE"
+        foreground: root.foreground
+        fontFamily: root.fontFamily
+      }
+
+      Toggle {
+        id: newItemCountToggle
+        width: parent.width
+        label: "Show new-item count"
+        description: "Display the number beside the Plex icon in the bar."
+        checked: root.showNewItemCount
+        foreground: root.foreground
+        fontFamily: root.fontFamily
+        onClicked: root.showNewItemCountRequested(!root.showNewItemCount)
+        Keys.onEscapePressed: root.close()
       }
 
       Text {

@@ -39,6 +39,7 @@ Panel {
   readonly property string activeViewTitle: activeView === "movies"
     ? "RECENT MOVIES" : (activeView === "series" ? "RECENT SHOWS"
       : (activeView === "recent" ? "RECENTLY ADDED" : "CONTINUE WATCHING"))
+  readonly property bool showNewItemCount: setting("showNewItemCount", true) !== false
   readonly property var barIdentity: hostWidget || root
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property color dimForeground: Qt.darker(contentForeground, 1.55)
@@ -105,6 +106,22 @@ Panel {
   function setPlaybackMode(mode) {
     PlexCore.PlexState.setPlaybackMode(mode)
     keyCatcher.forceActiveFocus()
+  }
+
+  function persistSettings(values) {
+    var entry = { id: root.moduleName }
+    for (var existing in root.settings)
+      if (existing !== "id") entry[existing] = root.settings[existing]
+    for (var key in values) entry[key] = values[key]
+
+    root.settings = entry
+    if (root.hostWidget && "settings" in root.hostWidget) root.hostWidget.settings = entry
+    if (root.bar && root.bar.shell && typeof root.bar.shell.updateEntryInline === "function")
+      root.bar.shell.updateEntryInline(root.moduleName, entry)
+  }
+
+  function setShowNewItemCount(value) {
+    root.persistSettings({ showNewItemCount: value === true })
   }
 
   function toggleWatched() {
@@ -703,6 +720,8 @@ Panel {
         urgentForeground: root.urgentForeground
         fontFamily: root.contentFontFamily
         iconComponent: plexIcon
+        showNewItemCount: root.showNewItemCount
+        onShowNewItemCountRequested: function(value) { root.setShowNewItemCount(value) }
         onDismissRequested: root.close()
       }
     }
