@@ -240,6 +240,7 @@ class PlexHelperTests(unittest.TestCase):
                 "UNRELATED=$(touch " + str(marker) + ")\n",
                 encoding="utf-8",
             )
+            env_file.chmod(0o600)
             values = parse_env_file(env_file)
             self.assertEqual(values["PLEX_TOKEN"], "safeToken_123456")
             self.assertFalse(marker.exists())

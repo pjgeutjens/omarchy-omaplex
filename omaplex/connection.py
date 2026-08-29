@@ -16,6 +16,7 @@ from omaplex.common import (
     atomic_json_write,
     clean_text,
     read_regular_file,
+    unlink_private_file,
 )
 from omaplex.config import (
     AUTH_MODE_MANUAL,
@@ -40,7 +41,7 @@ from omaplex.constants import (
 
 def parse_env_file(path: Path) -> dict[str, str]:
     try:
-        payload = read_regular_file(path, MAX_ENV_BYTES).decode("utf-8")
+        payload = read_regular_file(path, MAX_ENV_BYTES, private=True).decode("utf-8")
     except UnicodeDecodeError as error:
         raise ConfigurationError("The env file is not valid UTF-8") from error
     accepted = {
@@ -181,7 +182,7 @@ def with_connection(
 def restore_file(path: Path, value: dict[str, Any] | None, maximum: int) -> None:
     if value is None:
         with contextlib.suppress(FileNotFoundError):
-            path.unlink()
+            unlink_private_file(path)
     else:
         atomic_json_write(path, value, maximum)
 
@@ -269,7 +270,7 @@ def clear_configuration(
         clear_pending_auth()
     for path in (config_home() / "config.json", cache_home() / "recent.json"):
         with contextlib.suppress(FileNotFoundError):
-            path.unlink()
+            unlink_private_file(path)
     return with_connection(status_document(), None)
 
 

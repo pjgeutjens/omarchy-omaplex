@@ -70,9 +70,10 @@ Plain HTTP is allowed for a trusted LAN Plex server. It exposes Plex traffic to 
 
 ### Optional `.env` import
 
-For development or migration, the helper can import the four `PLEX_` values shown in `.env.example`. This is optional; the plugin does not depend on DailyDash or another project's `.env` file.
+For development or migration, the helper can import the four `PLEX_` values shown in `.env.example`. This is optional; the plugin does not depend on DailyDash or another project's `.env` file. The import rejects files readable by other users, so set mode `600` first.
 
 ```bash
+chmod 600 /path/to/project/.env
 ~/.config/omarchy/plugins/io.github.pjgeutjens.omaplex/bin/omaplex \
   configure-from-env /path/to/project/.env
 ```

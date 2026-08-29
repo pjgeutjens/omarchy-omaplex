@@ -31,4 +31,4 @@ STALE_SECONDS = 15 * 60
 NEW_AGE_DAYS = 30
 CLIENT_ID = "omarchy-omaplex"
 CLIENT_PRODUCT = "Plex for Omarchy"
-CLIENT_VERSION = "0.2.0"
+CLIENT_VERSION = "0.2.1"

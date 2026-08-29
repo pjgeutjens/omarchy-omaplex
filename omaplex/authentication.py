@@ -21,6 +21,7 @@ from omaplex.common import (
     clean_text,
     finite_integer,
     launch_detached,
+    unlink_private_file,
 )
 from omaplex.config import (
     AUTH_MODE_PLEX,
@@ -145,7 +146,7 @@ def clear_pending_auth() -> None:
     PendingAccountTokenStore().clear()
     PendingDeviceKeyStore().clear()
     with contextlib.suppress(FileNotFoundError):
-        pending_auth_path().unlink()
+        unlink_private_file(pending_auth_path())
 
 
 def begin_sign_in(
@@ -340,7 +341,7 @@ def restore_file(path: Path, value: dict[str, Any] | None, maximum: int) -> None
 
     if value is None:
         with contextlib.suppress(FileNotFoundError):
-            path.unlink()
+            unlink_private_file(path)
     else:
         atomic_json_write(path, value, maximum)
 
