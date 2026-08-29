@@ -68,9 +68,10 @@ Dogfood the current plugin before expanding it. Record actual playback failures 
 ## Publication
 
 - [x] Put the project in Git.
-- [ ] Create a tagged release.
-- [ ] Test clean installation, upgrade, removal, and credential cleanup.
-- [ ] Run the Ryan-style audit against the exact release commit.
+- [x] Create a tagged release.
+- [x] Test clean installation, update, and remove/reinstall while preserving saved credentials.
+- [ ] Test explicit credential cleanup with disposable values.
+- [x] Run the Ryan-style audit against the exact release commit.
 
 ## Out of scope for now
 
