@@ -43,6 +43,7 @@ Rectangle {
     { category: "Playback", keys: "M", action: "Mute or unmute" },
     { category: "Playback", keys: "#", action: "Cycle audio streams" },
     { category: "Playback", keys: "J", action: "Cycle subtitle streams" },
+    { category: "Playback", keys: "Ctrl+J", action: "Search Plex subtitles" },
     { category: "Playback", keys: "F", action: "Toggle player fullscreen" },
     { category: "Playback", keys: "Q", action: "Quit the player" },
     { category: "Browse All", keys: "/", action: "Fuzzy-search the selected Movies or Shows scope" },

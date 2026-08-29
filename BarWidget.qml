@@ -81,14 +81,43 @@ BarWidget {
       anchors.centerIn: parent
       spacing: Style.space(4)
 
-      Text {
-        text: "󰚺"
-        textFormat: Text.PlainText
-        color: button.active ? button.activeColor : button.foreground
-        font.family: button.fontFamily
-        font.pixelSize: Style.bar.iconFont
-        renderType: Text.NativeRendering
+      Item {
+        readonly property bool branded: button.active && root.usePlexGoldForNewItems
+
+        width: Style.bar.iconFont
+        height: Style.bar.iconFont
         anchors.verticalCenter: parent.verticalCenter
+
+        Rectangle {
+          anchors.fill: parent
+          radius: 2
+          color: "#000000"
+          visible: parent.branded
+        }
+
+        Text {
+          anchors.centerIn: parent
+          text: "󰚺"
+          textFormat: Text.PlainText
+          color: button.active ? button.activeColor : button.foreground
+          font.family: button.fontFamily
+          font.pixelSize: Style.bar.iconFont
+          renderType: Text.NativeRendering
+          visible: !parent.branded
+        }
+
+        Text {
+          anchors.centerIn: parent
+          anchors.horizontalCenterOffset: 0.5
+          text: "❯"
+          textFormat: Text.PlainText
+          color: root.plexGold
+          font.family: button.fontFamily
+          font.pixelSize: Style.bar.iconFont * 0.9
+          font.bold: true
+          renderType: Text.NativeRendering
+          visible: parent.branded
+        }
       }
 
       Text {

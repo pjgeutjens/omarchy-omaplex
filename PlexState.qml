@@ -23,10 +23,15 @@ Item {
   property string lastError: ""
   property string playbackMode: "windowed"
   property string playingTitle: ""
+  property bool autoPlayNextEpisode: false
+  property string subtitleSearchLanguage: "en"
   property string connectionServer: ""
   property string connectionName: ""
+  property string authenticationMode: ""
   property var movieLibraries: []
   property var seriesLibraries: []
+  property var authenticationServers: []
+  property string authenticationState: "idle"
   property string setupMessage: ""
   property string _statusOutput: ""
   property string _statusError: ""
@@ -41,11 +46,16 @@ Item {
   property string markMessage: ""
   property int scanRefreshesRemaining: 0
   property string _playError: ""
+  property string _windowError: ""
+  property string _windowStatusOutput: ""
+  property bool playerWindowActive: false
   property string _setupOutput: ""
   property string _setupError: ""
   property string _setupPayload: ""
   property string _clearOutput: ""
   property string _clearError: ""
+  property string _authOutput: ""
+  property string _authError: ""
 
   signal configurationFinished(bool success, string detail)
 
@@ -55,10 +65,17 @@ Item {
   readonly property bool scanning: scanProcess.running
   readonly property bool configuring: setupProcess.running
   readonly property bool clearingConfiguration: clearProcess.running
+  readonly property bool authenticating: authenticationState !== "idle"
+    || authStartProcess.running || authPollProcess.running
+    || authSelectProcess.running || authCancelProcess.running
+  readonly property bool authCancelProcessRunning: authCancelProcess.running
   readonly property bool settingsBusy: configuring || clearingConfiguration
+    || authStartProcess.running || authPollProcess.running || authSelectProcess.running
   readonly property bool marking: markProcess.running
   readonly property bool updating: refreshProcess.running || scanning || marking || settingsBusy
   readonly property bool playing: playbackProcess.running
+  readonly property bool playingWindowed: playerWindowActive
+  readonly property bool movingPlayer: windowProcess.running
   readonly property bool openingWeb: webProcess.running
   readonly property string sourceLabel: Model.sourceLabel(sourceState, updating)
   readonly property string freshnessText: Model.relativeTime(lastSuccessAt, Date.now())
@@ -99,10 +116,13 @@ Item {
 
   function applyConnection(value) {
     if (!value) return
-    if (typeof value.server !== "string" || typeof value.serverName !== "string")
+    if (typeof value.server !== "string" || typeof value.serverName !== "string"
+        || typeof value.authMode !== "string")
       throw new Error("Plex returned invalid connection settings")
     connectionServer = safeText(value.server, 512)
     connectionName = safeText(value.serverName, 128)
+    authenticationMode = value.authMode === "plex" ? "plex"
+      : (value.authMode === "manual" ? "manual" : "")
     movieLibraries = normalizeLibraries(value.movieLibraries)
     seriesLibraries = normalizeLibraries(value.seriesLibraries)
   }
@@ -182,6 +202,66 @@ Item {
     return true
   }
 
+  function startPlexSignIn() {
+    if (!installed || statusProcess.running || refreshProcess.running || scanning
+        || settingsBusy || authenticating)
+      return false
+    _authOutput = ""
+    _authError = ""
+    authenticationServers = []
+    authenticationState = "starting"
+    lastError = ""
+    setupMessage = "Opening Plex sign-in in your browser…"
+    authStartProcess.command = [
+      "timeout", "--signal=TERM", "25", helperCommand, "auth-start"
+    ]
+    authStartProcess.running = true
+    return true
+  }
+
+  function pollPlexSignIn() {
+    if (authenticationState !== "waiting" || authPollProcess.running)
+      return false
+    _authOutput = ""
+    _authError = ""
+    authPollProcess.command = [
+      "timeout", "--signal=TERM", "25", helperCommand, "auth-poll"
+    ]
+    authPollProcess.running = true
+    return true
+  }
+
+  function selectPlexServer(machineIdentifier) {
+    var value = String(machineIdentifier || "")
+    if (!/^[A-Za-z0-9._-]{1,128}$/.test(value) || authSelectProcess.running)
+      return false
+    authPollTimer.stop()
+    _authOutput = ""
+    _authError = ""
+    authenticationState = "connecting"
+    setupMessage = "Connecting to the selected Plex server…"
+    authSelectProcess.command = [
+      "timeout", "--signal=TERM", "50", helperCommand, "auth-complete",
+      "--machine-identifier", value
+    ]
+    authSelectProcess.running = true
+    return true
+  }
+
+  function cancelPlexSignIn() {
+    if (!authenticating || authCancelProcess.running) return false
+    authPollTimer.stop()
+    authenticationState = "idle"
+    authenticationServers = []
+    setupMessage = ""
+    _authError = ""
+    authCancelProcess.command = [
+      "timeout", "--signal=TERM", "12", helperCommand, "auth-cancel"
+    ]
+    authCancelProcess.running = true
+    return true
+  }
+
   function clearConfiguration() {
     if (!installed || statusProcess.running || refreshProcess.running || scanning || settingsBusy)
       return false
@@ -206,12 +286,35 @@ Item {
     playingTitle = safeText(item.title, 256)
     _playError = ""
     playbackProcess.command = [helperCommand, "play", "--rating-key", ratingKey, "--mode", requestedMode]
+    if (autoPlayNextEpisode) playbackProcess.command.push("--auto-play-next")
+    playbackProcess.command.push("--subtitle-language", subtitleSearchLanguage)
     playbackProcess.running = true
     return true
   }
 
   function setPlaybackMode(mode) {
     playbackMode = mode === "fullscreen" ? "fullscreen" : "windowed"
+  }
+
+  function bringPlayerHere() {
+    if (!playingWindowed || windowProcess.running) return false
+    _windowError = ""
+    lastError = ""
+    windowProcess.command = [
+      "timeout", "--signal=TERM", "5", helperCommand, "bring-player"
+    ]
+    windowProcess.running = true
+    return true
+  }
+
+  function checkPlayerWindow() {
+    if (!installed || windowStatusProcess.running) return false
+    _windowStatusOutput = ""
+    windowStatusProcess.command = [
+      "timeout", "--signal=TERM", "4", helperCommand, "player-window-status"
+    ]
+    windowStatusProcess.running = true
+    return true
   }
 
   function setWatchState(item, state) {
@@ -302,6 +405,8 @@ Item {
         marking: root.marking,
         playing: root.playing,
         configuring: root.configuring,
+        authenticationMode: root.authenticationMode,
+        authenticating: root.authenticating,
         items: root.items.length,
         continueItems: root.continueItems.length,
         movieItems: root.movieItems.length,
@@ -320,6 +425,20 @@ Item {
     repeat: true
     running: root.configured
     onTriggered: root.scanLibraries()
+  }
+
+  Timer {
+    interval: 2 * 1000
+    repeat: true
+    running: root.playing || root.playerWindowActive
+    onTriggered: root.checkPlayerWindow()
+  }
+
+  Timer {
+    id: authPollTimer
+    interval: 1200
+    repeat: true
+    onTriggered: root.pollPlexSignIn()
   }
 
   Timer {
@@ -527,6 +646,149 @@ Item {
   }
 
   Process {
+    id: authStartProcess
+    running: false
+    command: []
+    stdout: StdioCollector {
+      id: authStartStdout
+      waitForEnd: true
+      onStreamFinished: root._authOutput = text
+    }
+    stderr: StdioCollector {
+      id: authStartStderr
+      waitForEnd: true
+      onStreamFinished: root._authError = text
+    }
+    onExited: function(exitCode) {
+      var stdout = String(root._authOutput || authStartStdout.text || "")
+      var stderr = String(root._authError || authStartStderr.text || "")
+      try {
+        if (exitCode !== 0) throw new Error(stderr || "Could not start Plex sign-in")
+        var document = JSON.parse(stdout)
+        if (!document || document.state !== "pending" || document.browserOpened !== true)
+          throw new Error("Plex returned an invalid sign-in state")
+        root.authenticationState = "waiting"
+        root.setupMessage = "Finish signing in with Plex in your browser."
+        authPollTimer.restart()
+      } catch (error) {
+        root.authenticationState = "idle"
+        root.lastError = root.safeText(stderr || error, 220)
+        root.setupMessage = ""
+        root.configurationFinished(false, root.lastError)
+      }
+    }
+  }
+
+  Process {
+    id: authPollProcess
+    running: false
+    command: []
+    stdout: StdioCollector {
+      id: authPollStdout
+      waitForEnd: true
+      onStreamFinished: root._authOutput = text
+    }
+    stderr: StdioCollector {
+      id: authPollStderr
+      waitForEnd: true
+      onStreamFinished: root._authError = text
+    }
+    onExited: function(exitCode) {
+      if (root.authenticationState === "idle") return
+      var stdout = String(root._authOutput || authPollStdout.text || "")
+      var stderr = String(root._authError || authPollStderr.text || "")
+      try {
+        if (exitCode !== 0) throw new Error(stderr || "Could not finish Plex sign-in")
+        var document = JSON.parse(stdout)
+        if (document && document.state === "pending") return
+        if (!document || document.state !== "servers"
+            || !(document.servers instanceof Array) || document.servers.length < 1
+            || document.servers.length > 64)
+          throw new Error("Plex returned an invalid server selection")
+        var servers = []
+        for (var index = 0; index < document.servers.length; index++) {
+          var server = document.servers[index]
+          var machineIdentifier = String(server && server.machineIdentifier || "")
+          if (!/^[A-Za-z0-9._-]{1,128}$/.test(machineIdentifier)
+              || !server || typeof server.name !== "string")
+            throw new Error("Plex returned an invalid media server")
+          servers.push({
+            machineIdentifier: machineIdentifier,
+            name: root.safeText(server.name, 128),
+            owned: server.owned === true,
+            available: server.available === true
+          })
+        }
+        authPollTimer.stop()
+        root.authenticationServers = servers
+        if (servers.length === 1 && servers[0].available)
+          root.selectPlexServer(servers[0].machineIdentifier)
+        else {
+          root.authenticationState = "servers"
+          root.setupMessage = "Choose a Plex Media Server."
+        }
+      } catch (error) {
+        authPollTimer.stop()
+        root.authenticationState = "waiting"
+        root.lastError = root.safeText(stderr || error, 220)
+        root.setupMessage = "Plex sign-in paused. Cancel and try again."
+        root.configurationFinished(false, root.lastError)
+      }
+    }
+  }
+
+  Process {
+    id: authSelectProcess
+    running: false
+    command: []
+    stdout: StdioCollector {
+      id: authSelectStdout
+      waitForEnd: true
+      onStreamFinished: root._authOutput = text
+    }
+    stderr: StdioCollector {
+      id: authSelectStderr
+      waitForEnd: true
+      onStreamFinished: root._authError = text
+    }
+    onExited: function(exitCode) {
+      var stdout = String(root._authOutput || authSelectStdout.text || "")
+      var stderr = String(root._authError || authSelectStderr.text || "")
+      try {
+        if (exitCode !== 0) throw new Error(stderr || "Could not connect to Plex")
+        root.applyDocument(stdout)
+        root.authenticationState = "idle"
+        root.authenticationServers = []
+        root.setupMessage = "Signed in with Plex and connected to " + root.connectionName
+        root.configurationFinished(true, root.setupMessage)
+      } catch (error) {
+        root.authenticationState = "servers"
+        root.lastError = root.safeText(stderr || error, 220)
+        root.setupMessage = "Choose a Plex Media Server or cancel sign-in."
+        root.configurationFinished(false, root.lastError)
+      }
+    }
+  }
+
+  Process {
+    id: authCancelProcess
+    running: false
+    command: []
+    stderr: StdioCollector {
+      id: authCancelStderr
+      waitForEnd: true
+      onStreamFinished: root._authError = text
+    }
+    onExited: function(exitCode) {
+      if (exitCode !== 0)
+        root.lastError = root.safeText(
+          root._authError || authCancelStderr.text || "Could not cancel Plex sign-in",
+          220
+        )
+    }
+  }
+
+  Process {
     id: clearProcess
     running: false
     command: []
@@ -567,6 +829,50 @@ Item {
         root.lastError = root.safeText(root._playError || playStderr.text || "Playback failed", 220)
       root.playingTitle = ""
       Qt.callLater(root.refresh)
+    }
+  }
+
+  Process {
+    id: windowProcess
+    running: false
+    command: []
+    stderr: StdioCollector {
+      id: windowStderr
+      waitForEnd: true
+      onStreamFinished: root._windowError = text
+    }
+    onExited: function(exitCode) {
+      if (exitCode !== 0)
+        root.lastError = root.safeText(
+          root._windowError || windowStderr.text || "Could not move the Omaplex player",
+          220
+        )
+      root.checkPlayerWindow()
+    }
+  }
+
+  Process {
+    id: windowStatusProcess
+    running: false
+    command: []
+    stdout: StdioCollector {
+      id: windowStatusStdout
+      waitForEnd: true
+      onStreamFinished: root._windowStatusOutput = text
+    }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        root.playerWindowActive = false
+        return
+      }
+      try {
+        var document = JSON.parse(String(
+          root._windowStatusOutput || windowStatusStdout.text || ""
+        ))
+        root.playerWindowActive = document && document.active === true
+      } catch (error) {
+        root.playerWindowActive = false
+      }
     }
   }
 

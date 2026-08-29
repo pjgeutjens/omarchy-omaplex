@@ -15,3 +15,6 @@ python3 -m py_compile bin/omaplex
 python3 -m unittest discover -s tests -p 'test_*.py'
 node --test tests/model.test.mjs
 
+if command -v luac >/dev/null 2>&1; then
+  luac -p assets/omaplex_subtitles.lua
+fi

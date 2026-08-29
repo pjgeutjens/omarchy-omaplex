@@ -10,14 +10,14 @@ class FakeClient:
         self.responses = responses
         self.paths = []
 
-    def request_json(self, path):
+    def request_json(self, path, **kwargs):
         self.paths.append(path)
         for needle, response in self.responses.items():
             if needle in path:
                 return response
         raise AssertionError("unexpected path: " + path)
 
-    def request_empty(self, path):
+    def request_empty(self, path, **kwargs):
         self.paths.append(path)
 
 

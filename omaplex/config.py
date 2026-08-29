@@ -16,12 +16,25 @@ from omaplex.common import (
     run_no_output,
 )
 from omaplex.constants import (
+    MAX_AUTH_BYTES,
     MAX_CONFIG_BYTES,
     MAX_GEOMETRY_BYTES,
+    MAX_PRIVATE_KEY_BYTES,
     MAX_SECTIONS,
+    MAX_TOKEN_BYTES,
     PLUGIN_ID,
     SCHEMA_VERSION,
 )
+
+AUTH_MODE_MANUAL = "manual"
+AUTH_MODE_PLEX = "plex"
+
+
+def valid_token(value: Any) -> str:
+    token = str(value or "")
+    if not re.fullmatch(r"[A-Za-z0-9._-]{10," + str(MAX_TOKEN_BYTES) + r"}", token):
+        raise ConfigurationError("The Plex token has an invalid format")
+    return token
 
 
 def config_home() -> Path:
@@ -55,6 +68,15 @@ def validate_config(value: Any) -> dict[str, Any]:
     if machine_id and not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", machine_id):
         raise ConfigurationError("The saved Plex server identifier is invalid")
     server_name = clean_text(value.get("serverName"), 128)
+    auth_mode = str(value.get("authMode") or AUTH_MODE_MANUAL)
+    if auth_mode not in {AUTH_MODE_MANUAL, AUTH_MODE_PLEX}:
+        raise ConfigurationError("The saved Plex authentication method is invalid")
+    client_identifier = clean_text(value.get("clientIdentifier"), 128)
+    if auth_mode == AUTH_MODE_PLEX:
+        if not re.fullmatch(r"[A-Za-z0-9._-]{16,128}", client_identifier):
+            raise ConfigurationError("The saved Plex client identifier is invalid")
+    else:
+        client_identifier = ""
     return {
         "schemaVersion": SCHEMA_VERSION,
         "server": validate_origin(value.get("server")),
@@ -62,6 +84,8 @@ def validate_config(value: Any) -> dict[str, Any]:
         "tvSectionIds": shows,
         "machineIdentifier": machine_id,
         "serverName": server_name,
+        "authMode": auth_mode,
+        "clientIdentifier": client_identifier,
     }
 
 
@@ -114,11 +138,19 @@ def save_window_geometry(value: dict[str, int]) -> None:
 
 class SecretStore:
     attributes = ("service", PLUGIN_ID)
+    label = "Omaplex token"
+    maximum = MAX_TOKEN_BYTES
+    description = "Plex token"
+
+    def validate(self, value: str) -> str:
+        return valid_token(value)
 
     def lookup(self) -> str | None:
         try:
             return_code, output = run_bounded_output(
-                ["secret-tool", "lookup", *self.attributes], maximum=257, timeout=10
+                ["secret-tool", "lookup", *self.attributes],
+                maximum=self.maximum + 1,
+                timeout=10,
             )
         except FileNotFoundError as error:
             raise ConfigurationError(
@@ -129,17 +161,23 @@ class SecretStore:
         try:
             token = output.decode("utf-8").rstrip("\n")
         except UnicodeDecodeError as error:
-            raise ConfigurationError("The saved Plex token is invalid") from error
-        if token and not re.fullmatch(r"[A-Za-z0-9_-]{10,256}", token):
-            raise ConfigurationError("The saved Plex token is invalid")
-        return token or None
+            raise ConfigurationError(
+                "The saved " + self.description + " is invalid"
+            ) from error
+        if not token:
+            return None
+        try:
+            return self.validate(token)
+        except ConfigurationError as error:
+            raise ConfigurationError(
+                "The saved " + self.description + " is invalid"
+            ) from error
 
     def store(self, token: str) -> None:
-        if not re.fullmatch(r"[A-Za-z0-9_-]{10,256}", token):
-            raise ConfigurationError("The Plex token has an invalid format")
+        token = self.validate(token)
         try:
             return_code = run_no_output(
-                ["secret-tool", "store", "--label=Omaplex token", *self.attributes],
+                ["secret-tool", "store", "--label=" + self.label, *self.attributes],
                 input_bytes=token.encode("utf-8"),
                 timeout=15,
             )
@@ -149,7 +187,7 @@ class SecretStore:
             ) from error
         if return_code != 0:
             raise ConfigurationError(
-                "The desktop secret service could not save the Plex token"
+                "The desktop secret service could not save the " + self.description
             )
 
     def clear(self) -> None:
@@ -164,5 +202,51 @@ class SecretStore:
             ) from error
         if return_code not in {0, 1}:
             raise ConfigurationError(
-                "The desktop secret service could not clear the Plex token"
+                "The desktop secret service could not clear the " + self.description
             )
+
+
+class AccountTokenStore(SecretStore):
+    attributes = ("service", PLUGIN_ID, "kind", "account-token")
+    label = "Omaplex Plex account token"
+    description = "Plex account token"
+
+
+class DeviceKeyStore(SecretStore):
+    attributes = ("service", PLUGIN_ID, "kind", "device-key")
+    label = "Omaplex device key"
+    maximum = MAX_PRIVATE_KEY_BYTES
+    description = "Plex device key"
+
+    def validate(self, value: str) -> str:
+        if (
+            len(value.encode("utf-8")) > self.maximum
+            or not value.startswith("-----BEGIN PRIVATE KEY-----\n")
+            or not value.rstrip().endswith("-----END PRIVATE KEY-----")
+        ):
+            raise ConfigurationError("The Plex device key has an invalid format")
+        return value
+
+
+class PendingAccountTokenStore(AccountTokenStore):
+    attributes = ("service", PLUGIN_ID, "kind", "pending-account-token")
+    label = "Omaplex pending Plex account token"
+    description = "pending Plex account token"
+
+
+class PendingDeviceKeyStore(DeviceKeyStore):
+    attributes = ("service", PLUGIN_ID, "kind", "pending-device-key")
+    label = "Omaplex pending device key"
+    description = "pending Plex device key"
+
+
+def pending_auth_path() -> Path:
+    return config_home() / "pending-auth.json"
+
+
+def load_pending_auth() -> Any:
+    return read_json_file(pending_auth_path(), MAX_AUTH_BYTES)
+
+
+def save_pending_auth(value: dict[str, Any]) -> None:
+    atomic_json_write(pending_auth_path(), value, MAX_AUTH_BYTES)

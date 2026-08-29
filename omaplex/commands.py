@@ -15,8 +15,8 @@ from omaplex.common import (
     utc_now,
     wall_deadline,
 )
-from omaplex.connection import client_from_saved, status_document, with_connection
 from omaplex.config import save_config
+from omaplex.connection import client_from_saved, status_document, with_connection
 from omaplex.constants import MAX_CACHE_BYTES, MAX_SECTIONS
 
 

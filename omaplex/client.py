@@ -19,6 +19,7 @@ from omaplex.constants import (
     CLIENT_ID,
     MAX_API_BYTES,
     MAX_SECTIONS,
+    MAX_TOKEN_BYTES,
     REQUEST_TIMEOUT,
 )
 
@@ -26,6 +27,8 @@ from omaplex.constants import (
 class HttpMethod(StrEnum):
     GET = "GET"
     HEAD = "HEAD"
+    POST = "POST"
+    PUT = "PUT"
 
 
 class RefuseRedirects(urllib.request.HTTPRedirectHandler):
@@ -36,11 +39,20 @@ class RefuseRedirects(urllib.request.HTTPRedirectHandler):
 
 
 class PlexClient:
-    def __init__(self, server: str, token: str, opener: Any | None = None) -> None:
+    def __init__(
+        self,
+        server: str,
+        token: str,
+        opener: Any | None = None,
+        client_identifier: str = CLIENT_ID,
+    ) -> None:
         self.server = validate_origin(server)
-        if not token or len(token) > 256:
+        if not token or len(token) > MAX_TOKEN_BYTES:
             raise ConfigurationError("The saved Plex token is missing or invalid")
         self.token = token
+        if not re.fullmatch(r"[A-Za-z0-9._-]{3,128}", client_identifier):
+            raise ConfigurationError("The Plex client identifier is invalid")
+        self.client_identifier = client_identifier
         self.opener = opener or urllib.request.build_opener(RefuseRedirects())
         parsed = urllib.parse.urlsplit(self.server)
         self.origin = (
@@ -75,8 +87,8 @@ class PlexClient:
         headers = {
             "Accept": "application/json",
             "X-Plex-Token": self.token,
-            "X-Plex-Client-Identifier": CLIENT_ID,
-            "User-Agent": CLIENT_ID + "/0.1",
+            "X-Plex-Client-Identifier": self.client_identifier,
+            "User-Agent": CLIENT_ID + "/0.2",
         }
         if range_header:
             headers["Range"] = range_header
@@ -95,9 +107,11 @@ class PlexClient:
         except (urllib.error.URLError, TimeoutError, OSError) as error:
             raise ResponseError("Plex is unavailable") from error
 
-    def request_json(self, path: str) -> dict[str, Any]:
+    def request_json(
+        self, path: str, *, method: HttpMethod = HttpMethod.GET
+    ) -> dict[str, Any]:
         try:
-            response = self.open(path)
+            response = self.open(path, method=method)
         except urllib.error.HTTPError as error:
             status = error.code
             error.close()
@@ -119,9 +133,9 @@ class PlexClient:
             raise ResponseError("Plex returned an invalid document")
         return value
 
-    def request_empty(self, path: str) -> None:
+    def request_empty(self, path: str, *, method: HttpMethod = HttpMethod.GET) -> None:
         try:
-            response = self.open(path)
+            response = self.open(path, method=method)
         except urllib.error.HTTPError as error:
             status = error.code
             error.close()

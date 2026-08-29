@@ -42,6 +42,12 @@ Panel {
   readonly property bool showNewItemCount: setting("showNewItemCount", true) !== false
   readonly property bool usePlexGoldForNewItems:
     setting("usePlexGoldForNewItems", true) !== false
+  readonly property bool autoPlayNextEpisode:
+    setting("autoPlayNextEpisode", false) === true
+  readonly property string subtitleSearchLanguage: {
+    var value = String(setting("subtitleSearchLanguage", "en") || "").toLowerCase()
+    return /^[a-z]{2}$/.test(value) ? value : "en"
+  }
   readonly property var barIdentity: hostWidget || root
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
   readonly property color dimForeground: Qt.darker(contentForeground, 1.55)
@@ -55,6 +61,7 @@ Panel {
     root.controller.show()
     root.clampSelection()
     if (!PlexCore.PlexState.initialized) PlexCore.PlexState.loadStatus()
+    PlexCore.PlexState.checkPlayerWindow()
     if (showSettings)
       root.openSettings()
     else {
@@ -128,6 +135,27 @@ Panel {
 
   function setUsePlexGoldForNewItems(value) {
     root.persistSettings({ usePlexGoldForNewItems: value === true })
+  }
+
+  function setAutoPlayNextEpisode(value) {
+    root.persistSettings({ autoPlayNextEpisode: value === true })
+  }
+
+  function setSubtitleSearchLanguage(value) {
+    var language = String(value || "").trim().toLowerCase()
+    if (/^[a-z]{2}$/.test(language))
+      root.persistSettings({ subtitleSearchLanguage: language })
+  }
+
+  onAutoPlayNextEpisodeChanged:
+    PlexCore.PlexState.autoPlayNextEpisode = root.autoPlayNextEpisode
+
+  onSubtitleSearchLanguageChanged:
+    PlexCore.PlexState.subtitleSearchLanguage = root.subtitleSearchLanguage
+
+  Component.onCompleted: {
+    PlexCore.PlexState.autoPlayNextEpisode = root.autoPlayNextEpisode
+    PlexCore.PlexState.subtitleSearchLanguage = root.subtitleSearchLanguage
   }
 
   function toggleWatched() {
@@ -364,6 +392,18 @@ Panel {
                 bordered: PlexCore.PlexState.playbackMode === "windowed"
                 enabled: !PlexCore.PlexState.playing
                 onClicked: root.setPlaybackMode("windowed")
+              }
+
+              PanelActionButton {
+                iconText: "\uEB14" // cod-link-external
+                tooltipText: PlexCore.PlexState.playingWindowed
+                  ? "Bring player to this workspace"
+                  : "No windowed player is active"
+                foreground: root.contentForeground
+                fontFamily: root.contentFontFamily
+                enabled: PlexCore.PlexState.playingWindowed
+                  && !PlexCore.PlexState.movingPlayer
+                onClicked: PlexCore.PlexState.bringPlayerHere()
               }
 
               PanelActionButton {
@@ -728,9 +768,17 @@ Panel {
         iconComponent: plexIcon
         showNewItemCount: root.showNewItemCount
         usePlexGoldForNewItems: root.usePlexGoldForNewItems
+        autoPlayNextEpisode: root.autoPlayNextEpisode
+        subtitleSearchLanguage: root.subtitleSearchLanguage
         onShowNewItemCountRequested: function(value) { root.setShowNewItemCount(value) }
         onUsePlexGoldForNewItemsRequested: function(value) {
           root.setUsePlexGoldForNewItems(value)
+        }
+        onAutoPlayNextEpisodeRequested: function(value) {
+          root.setAutoPlayNextEpisode(value)
+        }
+        onSubtitleSearchLanguageRequested: function(value) {
+          root.setSubtitleSearchLanguage(value)
         }
         onDismissRequested: root.close()
       }

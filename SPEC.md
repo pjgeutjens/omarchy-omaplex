@@ -23,6 +23,8 @@ Version 0.2:
 - distinguish unwatched, started, and watched items;
 - opens Browse All as a fullscreen searchable and paged panel;
 - streams playable items through `mpv` in windowed or fullscreen mode;
+- can ask Plex for a continuous episode play queue and advance after natural playback completion when the user enables the saved setting;
+- searches Plex's on-demand subtitle results from the running player and loads the chosen result without putting the token in mpv;
 - remembers the last visible windowed player rectangle and restores it through Hyprland;
 - reports playback progress and watched completion to Plex;
 - lets the user mark any compact-list item watched or unwatched;
@@ -58,18 +60,23 @@ At setup, discover every movie and TV library rather than assuming section IDs. 
 - movies: `/library/sections/<id>/recentlyAdded?type=1`;
 - episodes: `/library/sections/<id>/recentlyAdded?type=4`;
 - scan: `/library/sections/<id>/refresh`;
-- authentication: `X-Plex-Token` request header.
+- authentication: Plex's browser-based PIN flow, with `X-Plex-Token` request headers after sign-in.
 
 Normalize each entry to a small model containing rating keys, media kind, title, subtitle, added time, playback hint, and watch state. Cap response bytes, item counts, and string lengths.
 
 ## Configuration and credentials
 
-Required setup values are a Plex server origin and `X-Plex-Token`. The Plex friendly name, selected library section IDs, and display settings are non-secret.
+The default setup is **Sign in with Plex**. Omaplex opens Plex's browser authorization page, receives the traditional account token from the approved PIN, discovers accessible servers, and lets the user choose when more than one server is available. A manual server origin and token remain available under Advanced.
+
+Auto-play next episode is a non-secret widget setting. It is disabled by default, applies only to episodes, and stops when the player closes.
+
+Subtitle search language is a non-secret widget setting. It is a two-letter code, defaults to `en`, and is fixed for each player launch. `Ctrl+J` opens the searchable result menu during playback.
 
 - Open an in-panel connection form automatically when no configuration exists.
-- Accept the token only through bounded stdin to the helper.
-- Store the token in the user's secret service through `secret-tool`.
-- Send the token in a request header, never in a URL, process argument, log, IPC response, or `shell.json`.
+- Store Plex account and server tokens in the user's secret service through `secret-tool`.
+- Keep an existing working connection intact until browser sign-in, server selection, connection testing, and the first metadata refresh all succeed.
+- Accept manually entered tokens only through bounded stdin to the helper.
+- Send tokens in request headers, never in URLs, process arguments, logs, IPC responses, or `shell.json`.
 - Restrict the server setting to an HTTP or HTTPS origin without a path, query, or fragment.
 - Do not follow authenticated redirects to another origin.
 - Permit plain HTTP for a user-confirmed trusted LAN server, with a clear warning in setup.
@@ -118,6 +125,7 @@ Cover these cases before the first local install:
 - empty libraries, offline server, invalid token, timeout, and malformed response;
 - bounded status, browse, setup, and cache documents;
 - token absence from argv, logs, settings, cache metadata, URLs, and IPC output;
+- browser sign-in cancellation, server selection, token storage, and rollback of existing credentials;
 - scan acceptance versus scan completion wording;
 - keyboard navigation and panel close behavior;
 - QML validation and live shell load.

@@ -2,20 +2,31 @@
 
 A right-side Omarchy bar widget with bounded Continue Watching, combined Recently Added, Recent Movies, and Recent Shows lists. Every row says `Movie` or `Show` and has an explicit `UNWATCHED`, `STARTED`, or `WATCHED` label. Continue Watching merges Plex's in-progress and On Deck items, deduplicates each show, and sorts them newest-viewed first. Combined Recently Added is newest-added first. The separate movie and show views prioritize unfinished items. Multiple newly added episodes from one show collapse into the newest show row.
 
+## Screenshots
+
+![Omaplex widget showing Continue Watching](screenshots/widget.png)
+
+![Browse All showing a show's episode list](screenshots/browse.png)
+
+![Fringe playing through Omaplex and mpv](screenshots/playback.png)
+
 Show rows use the matching Plex On Deck episode when one is available. Its play action resumes the current episode or starts the next one.
 
 Click a row to stream it through `mpv`. Choose Windowed for a normal floating, movable window or Fullscreen before playback. Windowed mode remembers its last compositor position and size for the next launch; if that rectangle is no longer visible on a connected monitor, only the saved size is used. Press `O` to open the same item in Plex Web. Press `P`, or click the Plex glyph beside the live-status badge, to open Plex Web itself.
 
+Connection settings has an **Auto-play next episode** toggle. It is off by default. When it is on, episode playback uses Plex's continuous play queue and `mpv` starts the next episode after the current episode ends. Closing the player stops the queue. Movie playback remains single-item.
+
 Browse All opens a separate fullscreen Omarchy panel. It searches and pages through the complete movie or show library without loading the full catalogue into the bar popup. Opening a show drills into its episodes.
 
-`mpv` keeps its built-in on-screen controller and default keyboard bindings. Use Space for pause, the arrow keys to seek, `#` to choose an audio track, `J` to choose a subtitle track, and `F` to toggle fullscreen. These track controls cover audio and embedded subtitles in the selected media part; Plex sidecar subtitle tracks are also sent to `mpv` through the private loopback proxy.
+`mpv` keeps its built-in on-screen controller and default keyboard bindings. Use Space for pause, the arrow keys to seek, `#` to choose an audio track, `J` to choose a subtitle track, and `F` to toggle fullscreen. Press `Ctrl+J` to search Plex's online subtitle results in an mpv menu. Typing filters that menu. The chosen result is saved for the current Plex user and added to the running player.
 
 ## Requirements
 
 - Omarchy Quattro with the schema version 1 plugin API
 - Python 3.11 or newer
-- `secret-tool`, `fzf`, `mpv`, and `xdg-open`
-- A Plex server origin and `X-Plex-Token`
+- `secret-tool`, `mpv`, and `xdg-open`
+- Optional: `fzf` for Browse All ranking; a bounded built-in fuzzy matcher is used when it is unavailable
+- A Plex account with access to a Plex Media Server
 
 ## Local install
 
@@ -35,15 +46,17 @@ omarchy-shell shell rescanPlugins
 
 Open the Plex widget after installation. On first launch it opens Connection settings automatically:
 
-1. Enter the Plex server origin, such as `http://plex-server:32400`.
-2. Paste an `X-Plex-Token`.
-3. Select **Test and save**.
+1. Select **Sign in with Plex**.
+2. Approve **Plex for Omarchy** in the browser window.
+3. If the account has multiple servers, choose the one Omaplex should use.
 
-The connection is tested before anything is replaced. The plugin discovers the Plex server's friendly name and every movie and show library, saves that non-secret connection metadata, and immediately loads the lists. Open Connection settings later with `,` or the small settings button in the panel footer. When editing a working connection, leave the token blank to keep the saved token.
+The browser handles the Plex password; Omaplex never receives it. The plugin uses Plex's PIN authorization flow, discovers the account's Plex Media Servers and their advertised connections, and tests the selected server before replacing a working configuration. Open Connection settings later with `,` or the small settings button in the panel footer.
 
-Connection settings has two appearance toggles. **Show new-item count** controls the number beside the bar icon. **Override theme colors for new items** forces the Plex logo yellow instead of using the Omarchy theme's active color. Both are enabled by default and stored with the widget entry in `~/.config/omarchy/shell.json`.
+**Advanced manual connection** retains the original server-origin and token form for unusual networking, offline migration, or development. When editing a working manual connection, leave the token blank to keep the saved token.
 
-The server origin and discovered section IDs go to `~/.config/omaplex/config.json`; the last windowed player rectangle goes to `player-window.json` in the same private directory. The token goes to the desktop secret service. It isn't written to Omarchy settings, cache files, URLs, logs, IPC output, or process arguments. Removing credentials from Connection settings requires a confirmation click and clears both the saved token and Plex data while retaining the player geometry preference.
+Connection settings stores four preferences with the widget entry in `~/.config/omarchy/shell.json`. **Auto-play next episode** is disabled by default. **Subtitle search language** is a two-letter code and defaults to `en`. **Show new-item count** controls the number beside the bar icon. **Override theme colors for new items** uses the black-and-gold Plex logo instead of the Omarchy theme's active color. The two appearance preferences are enabled by default.
+
+The server origin, client identifier, authentication mode, and discovered section IDs go to `~/.config/omaplex/config.json`; the last windowed player rectangle goes to `player-window.json` in the same private directory. Plex account and server tokens go to the desktop secret service. They are not written to Omarchy settings, cache files, URLs, logs, IPC output, or process arguments. Removing credentials from Connection settings requires a confirmation click and clears all saved authentication material and Plex data while retaining the player geometry preference.
 
 Plain HTTP is allowed for a trusted LAN Plex server. It exposes Plex traffic to that LAN, so use HTTPS for untrusted networks.
 
@@ -93,7 +106,9 @@ In Browse All, select Movies or Shows first, then `/` fuzzy-searches only that s
 
 The helper resolves the Plex media part, starts a random loopback-only HTTP endpoint, and runs `mpv` against that local URL. The helper adds `X-Plex-Token` when it requests the upstream media. This keeps the token out of `mpv` arguments while retaining Range requests for seeking.
 
-While mpv is open, the helper reports its playback position to Plex every ten seconds and once more when the player closes. Plex can therefore resume later playback from the new position. Reaching 90 percent marks the item watched, and the panel refreshes when playback ends.
+Online subtitle search goes through the Plex server and its configured provider. Omaplex caps the result list at 40 and the downloaded subtitle at 8 MiB. The selected subtitle is written with mode `0600` inside the player's private temporary directory, loaded into mpv, and deleted when the player exits. The Plex token does not enter mpv's arguments or the subtitle file.
+
+While mpv is open, the helper reports its playback position to Plex every ten seconds and once more when an item ends or the player closes. Plex can therefore resume later playback from the new position. Reaching 90 percent marks that item watched, including each item completed in an automatic episode queue. The panel refreshes when playback ends.
 
 The watch-state badge is also an action. Click it, or select a row and press `X`, to send Plex a watched or unwatched update. A started item becomes watched; a watched item becomes unwatched. The panel refreshes after Plex accepts the update.
 
@@ -113,11 +128,15 @@ Close any player window first, then remove the widget through Omarchy Plugin Con
 omarchy plugin remove io.github.pjgeutjens.omaplex --yes
 ```
 
-Removal does not delete the saved server settings, cached list, or secret-service token. Delete them when you want a complete reset:
+Removal does not delete saved server settings, cached lists, or secret-service entries. Prefer **Remove credentials** in Connection settings before uninstalling. For a manual reset after removal:
 
 ```bash
 secret-tool clear service io.github.pjgeutjens.omaplex
+secret-tool clear service io.github.pjgeutjens.omaplex kind account-token
+secret-tool clear service io.github.pjgeutjens.omaplex kind pending-account-token
 rm -rf ~/.config/omaplex ~/.cache/omaplex
 ```
+
+Local credential removal does not revoke the authorization recorded by Plex. To revoke it too, remove **Plex for Omarchy** from Plex Web under **Settings → Authorized Devices**.
 
 The plugin installs no service, privileged file, or Hyprland rule.

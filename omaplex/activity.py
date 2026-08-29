@@ -54,11 +54,13 @@ def recent_snapshot(
     on_deck = extract_metadata_items(client.request_json("/library/onDeck?" + query))
     continue_rows.extend(on_deck)
     continue_rows.sort(
-        key=lambda item: finite_integer(
-            item.get("lastViewedAt") or item.get("updatedAt") or item.get("addedAt")
-        )
-        if isinstance(item, dict)
-        else 0,
+        key=lambda item: (
+            finite_integer(
+                item.get("lastViewedAt") or item.get("updatedAt") or item.get("addedAt")
+            )
+            if isinstance(item, dict)
+            else 0
+        ),
         reverse=True,
     )
     continue_items: list[dict[str, Any]] = []
@@ -68,9 +70,12 @@ def recent_snapshot(
         if item is None or not isinstance(row, dict):
             continue
         if row.get("type") == "episode":
-            group = "show:" + str(
-                row.get("grandparentRatingKey") or row.get("grandparentTitle") or ""
-            ).lower()
+            group = (
+                "show:"
+                + str(
+                    row.get("grandparentRatingKey") or row.get("grandparentTitle") or ""
+                ).lower()
+            )
         else:
             group = "movie:" + str(row.get("ratingKey") or "")
         if group in seen_continue:
@@ -89,9 +94,7 @@ def recent_snapshot(
             r"\d{1,96}", rating_key
         ):
             continue
-        code = format_episode_code(
-            candidate.get("parentIndex"), candidate.get("index")
-        )
+        code = format_episode_code(candidate.get("parentIndex"), candidate.get("index"))
         prefix = (
             "Resume " if finite_integer(candidate.get("viewOffset")) > 0 else "Next "
         )

@@ -32,12 +32,17 @@ class AuthenticationError(PlexError):
 class ResponseError(PlexError):
     pass
 
+
 def utc_now() -> dt.datetime:
     return dt.datetime.now(dt.timezone.utc)
 
 
 def isoformat(value: dt.datetime) -> str:
-    return value.astimezone(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return (
+        value.astimezone(dt.timezone.utc)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
 
 
 def clean_text(value: Any, maximum: int = MAX_FIELD) -> str:
@@ -50,7 +55,6 @@ def finite_integer(value: Any, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError, OverflowError):
         return default
-
 
 
 def stop_process_group(process: subprocess.Popen[Any]) -> None:
@@ -68,6 +72,7 @@ def stop_process_group(process: subprocess.Popen[Any]) -> None:
     with contextlib.suppress(subprocess.TimeoutExpired):
         process.wait(timeout=0.5)
 
+
 @contextlib.contextmanager
 def wall_deadline(seconds: int, message: str):
     def expired(signum: int, frame: Any) -> None:
@@ -83,7 +88,9 @@ def wall_deadline(seconds: int, message: str):
         signal.signal(signal.SIGALRM, previous_handler)
 
 
-def run_no_output(command: list[str], *, input_bytes: bytes | None = None, timeout: float = 10) -> int:
+def run_no_output(
+    command: list[str], *, input_bytes: bytes | None = None, timeout: float = 10
+) -> int:
     process = subprocess.Popen(
         command,
         stdin=subprocess.PIPE if input_bytes is not None else subprocess.DEVNULL,
@@ -112,7 +119,9 @@ def launch_detached(command: list[str]) -> None:
     )
 
 
-def run_bounded_output(command: list[str], *, maximum: int, timeout: float) -> tuple[int, bytes]:
+def run_bounded_output(
+    command: list[str], *, maximum: int, timeout: float
+) -> tuple[int, bytes]:
     process = subprocess.Popen(
         command,
         stdin=subprocess.DEVNULL,
@@ -146,7 +155,9 @@ def run_bounded_output(command: list[str], *, maximum: int, timeout: float) -> t
                 payload.extend(chunk)
                 if len(payload) > maximum:
                     stop_process_group(process)
-                    raise ConfigurationError("The desktop secret service returned too much data")
+                    raise ConfigurationError(
+                        "The desktop secret service returned too much data"
+                    )
         remaining = max(0.0, deadline - time.monotonic())
         try:
             return process.wait(timeout=remaining), bytes(payload)
@@ -159,12 +170,16 @@ def run_bounded_output(command: list[str], *, maximum: int, timeout: float) -> t
 
 
 def atomic_json_write(path: Path, value: dict[str, Any], maximum: int) -> None:
-    payload = (json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+    payload = (
+        json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
     if len(payload) > maximum:
         raise ResponseError("Plex data exceeded the local size limit")
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(path.parent, 0o700)
-    descriptor, temporary = tempfile.mkstemp(prefix="." + path.name + ".", dir=path.parent)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix="." + path.name + ".", dir=path.parent
+    )
     try:
         os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "wb") as stream:

@@ -18,13 +18,18 @@ from omaplex.common import (
     read_regular_file,
 )
 from omaplex.config import (
+    AUTH_MODE_MANUAL,
+    AccountTokenStore,
+    DeviceKeyStore,
     SecretStore,
     config_home,
     load_config,
     save_config,
+    valid_token,
     validate_config,
 )
 from omaplex.constants import (
+    CLIENT_ID,
     MAX_CACHE_BYTES,
     MAX_CONFIG_BYTES,
     MAX_ENV_BYTES,
@@ -68,8 +73,10 @@ def configure_from_env(path: Path, store: SecretStore | None = None) -> dict[str
     values = parse_env_file(path)
     server = validate_origin(values.get("PLEX_BASE_URL"))
     token = values.get("PLEX_TOKEN", "")
-    if not re.fullmatch(r"[A-Za-z0-9_-]{10,256}", token):
-        raise ConfigurationError("PLEX_TOKEN is missing or invalid")
+    try:
+        token = valid_token(token)
+    except ConfigurationError as error:
+        raise ConfigurationError("PLEX_TOKEN is missing or invalid") from error
     client = PlexClient(server, token)
     libraries, machine_id, server_name = client.discover()
     available_movies = [item["id"] for item in libraries if item["type"] == "movie"]
@@ -92,6 +99,7 @@ def configure_from_env(path: Path, store: SecretStore | None = None) -> dict[str
             "tvSectionIds": shows,
             "machineIdentifier": machine_id,
             "serverName": server_name,
+            "authMode": AUTH_MODE_MANUAL,
         }
     )
     (store or SecretStore()).store(token)
@@ -121,8 +129,8 @@ def read_setup(stream: Any | None = None) -> tuple[str, str]:
         raise ConfigurationError("Setup input is invalid")
     server = validate_origin(value.get("server"))
     token = str(value.get("token") or "")
-    if token and not re.fullmatch(r"[A-Za-z0-9_-]{10,256}", token):
-        raise ConfigurationError("The Plex token has an invalid format")
+    if token:
+        token = valid_token(token)
     return server, token
 
 
@@ -135,6 +143,7 @@ def connection_info(
             "serverName": "",
             "movieLibraries": [],
             "seriesLibraries": [],
+            "authMode": "",
         }
     values = libraries or []
     movies = [
@@ -155,6 +164,7 @@ def connection_info(
         "serverName": config["serverName"],
         "movieLibraries": movies,
         "seriesLibraries": shows,
+        "authMode": config.get("authMode", AUTH_MODE_MANUAL),
     }
 
 
@@ -198,22 +208,43 @@ def configure_connection(
             "tvSectionIds": shows,
             "machineIdentifier": machine_id,
             "serverName": server_name,
+            "authMode": AUTH_MODE_MANUAL,
         }
     )
     snapshot = recent_snapshot(client, config)
     old_config = load_config()
     old_snapshot = load_snapshot()
+    account_store = AccountTokenStore() if store is None else None
+    key_store = DeviceKeyStore() if store is None else None
+    old_account_token = account_store.lookup() if account_store else None
+    old_key = key_store.lookup() if key_store else None
     try:
         if token:
             secret_store.store(requested_token)
         save_config(config)
         save_snapshot(snapshot)
+        if account_store:
+            account_store.clear()
+        if key_store:
+            key_store.clear()
     except Exception:
         with contextlib.suppress(PlexError):
             if saved_token:
                 secret_store.store(saved_token)
             elif token:
                 secret_store.clear()
+        with contextlib.suppress(PlexError):
+            if account_store:
+                if old_account_token:
+                    account_store.store(old_account_token)
+                else:
+                    account_store.clear()
+        with contextlib.suppress(PlexError):
+            if key_store:
+                if old_key:
+                    key_store.store(old_key)
+                else:
+                    key_store.clear()
         with contextlib.suppress(PlexError, OSError):
             restore_file(config_home() / "config.json", old_config, MAX_CONFIG_BYTES)
         with contextlib.suppress(PlexError, OSError):
@@ -222,8 +253,20 @@ def configure_connection(
     return with_connection(snapshot, config, libraries)
 
 
-def clear_configuration(store: SecretStore | None = None) -> dict[str, Any]:
+def clear_configuration(
+    store: SecretStore | None = None,
+    account_store: AccountTokenStore | None = None,
+    key_store: DeviceKeyStore | None = None,
+) -> dict[str, Any]:
     (store or SecretStore()).clear()
+    if store is None or account_store is not None:
+        (account_store or AccountTokenStore()).clear()
+    if store is None or key_store is not None:
+        (key_store or DeviceKeyStore()).clear()
+    if store is None:
+        from omaplex.authentication import clear_pending_auth
+
+        clear_pending_auth()
     for path in (config_home() / "config.json", cache_home() / "recent.json"):
         with contextlib.suppress(FileNotFoundError):
             path.unlink()
@@ -236,12 +279,21 @@ def client_from_saved(
     config = load_config()
     if config is None:
         raise ConfigurationError("Omaplex is not configured")
-    token = (store or SecretStore()).lookup()
-    if not token:
-        raise ConfigurationError(
-            "No Plex token was found in the desktop secret service"
-        )
-    return PlexClient(config["server"], token), config
+    if store is None:
+        from omaplex.authentication import token_for_config
+
+        token = token_for_config(config)
+    else:
+        token = store.lookup()
+        if not token:
+            raise ConfigurationError(
+                "No Plex token was found in the desktop secret service"
+            )
+    return PlexClient(
+        config["server"],
+        token,
+        client_identifier=config["clientIdentifier"] or CLIENT_ID,
+    ), config
 
 
 def status_document() -> dict[str, Any]:

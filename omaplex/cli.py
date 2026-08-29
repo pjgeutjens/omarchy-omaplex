@@ -4,12 +4,17 @@ import argparse
 import sys
 from pathlib import Path
 
+from omaplex.authentication import (
+    begin_sign_in,
+    clear_pending_auth,
+    complete_sign_in,
+    poll_sign_in,
+)
 from omaplex.browse import BrowseKind, SearchScope, browse_document
 from omaplex.commands import command_refresh, command_scan, print_json
 from omaplex.common import (
     ConfigurationError,
     PlexError,
-    ResponseError,
     clean_text,
     launch_detached,
     wall_deadline,
@@ -22,6 +27,7 @@ from omaplex.connection import (
     configure_from_env,
     read_setup,
     status_document,
+    with_connection,
 )
 from omaplex.playback import (
     PlaybackMode,
@@ -30,6 +36,8 @@ from omaplex.playback import (
     plex_web_url,
     set_watch_state,
 )
+from omaplex.subtitles import download_subtitle, search_subtitles
+from omaplex.windowing import bring_player_to_active_workspace, windowed_player_active
 
 
 def parser() -> argparse.ArgumentParser:
@@ -38,7 +46,14 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("status")
     commands.add_parser("refresh")
     commands.add_parser("scan")
+    commands.add_parser("bring-player")
+    commands.add_parser("player-window-status")
     commands.add_parser("configure")
+    commands.add_parser("auth-start")
+    commands.add_parser("auth-poll")
+    auth_complete = commands.add_parser("auth-complete")
+    auth_complete.add_argument("--machine-identifier", required=True)
+    commands.add_parser("auth-cancel")
     commands.add_parser("clear-configuration")
     browse = commands.add_parser("browse")
     browse.add_argument(
@@ -64,6 +79,16 @@ def parser() -> argparse.ArgumentParser:
         choices=tuple(PlaybackMode),
         default=PlaybackMode.WINDOWED,
     )
+    play_command.add_argument("--auto-play-next", action="store_true")
+    play_command.add_argument("--subtitle-language", default="en")
+    subtitle_search = commands.add_parser("subtitle-search")
+    subtitle_search.add_argument("--rating-key", required=True)
+    subtitle_search.add_argument("--language", required=True)
+    subtitle_download = commands.add_parser("subtitle-download")
+    subtitle_download.add_argument("--rating-key", required=True)
+    subtitle_download.add_argument("--subtitle-key", required=True)
+    subtitle_download.add_argument("--format", required=True)
+    subtitle_download.add_argument("--output-directory", required=True)
     mark_command = commands.add_parser("mark")
     mark_command.add_argument("--rating-key", required=True)
     mark_command.add_argument(
@@ -84,10 +109,33 @@ def main(argv: list[str] | None = None) -> int:
             return command_refresh()
         if args.command == "scan":
             return command_scan()
+        if args.command == "bring-player":
+            bring_player_to_active_workspace()
+            return 0
+        if args.command == "player-window-status":
+            print_json({"active": windowed_player_active()})
+            return 0
         if args.command == "configure":
             server, token = read_setup()
             with wall_deadline(30, "Plex setup exceeded thirty seconds"):
                 print_json(configure_connection(server, token))
+            return 0
+        if args.command == "auth-start":
+            with wall_deadline(20, "Plex sign-in could not be started"):
+                print_json(begin_sign_in())
+            return 0
+        if args.command == "auth-poll":
+            with wall_deadline(20, "Plex sign-in check timed out"):
+                print_json(poll_sign_in())
+            return 0
+        if args.command == "auth-complete":
+            with wall_deadline(45, "Plex server connection timed out"):
+                snapshot, config, libraries = complete_sign_in(args.machine_identifier)
+                print_json(with_connection(snapshot, config, libraries))
+            return 0
+        if args.command == "auth-cancel":
+            clear_pending_auth()
+            print_json({"state": "cancelled"})
             return 0
         if args.command == "clear-configuration":
             print_json(clear_configuration())
@@ -113,7 +161,30 @@ def main(argv: list[str] | None = None) -> int:
                 print_json(configure_from_env(Path(args.env_file)))
             return 0
         if args.command == "play":
-            return play(args.rating_key, args.mode)
+            return play(
+                args.rating_key,
+                args.mode,
+                args.auto_play_next,
+                args.subtitle_language,
+            )
+        if args.command == "subtitle-search":
+            with wall_deadline(20, "Plex subtitle search exceeded twenty seconds"):
+                client, _ = client_from_saved()
+                print_json(search_subtitles(client, args.rating_key, args.language))
+            return 0
+        if args.command == "subtitle-download":
+            with wall_deadline(20, "Plex subtitle download exceeded twenty seconds"):
+                client, _ = client_from_saved()
+                print_json(
+                    download_subtitle(
+                        client,
+                        args.rating_key,
+                        args.subtitle_key,
+                        args.format,
+                        args.output_directory,
+                    )
+                )
+            return 0
         if args.command == "mark":
             with wall_deadline(10, "Plex watch-state update exceeded ten seconds"):
                 client, _ = client_from_saved()

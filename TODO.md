@@ -10,13 +10,14 @@ Dogfood the current plugin before expanding it. Record actual playback failures 
   - If direct playback fails because of media compatibility, request a Plex HLS transcode and retry.
   - If both fail, present the Plex Web action with a useful error.
   - Keep the token out of media URLs and process arguments.
-- [ ] Add optional next-episode playback:
-  - Refresh Plex On Deck after an episode finishes.
-  - Offer the next episode instead of forcing autoplay.
-  - Allow autoplay later as an explicit preference.
+- [x] Add optional next-episode playback:
+  - Ask Plex for its continuous episode play queue.
+  - Advance after natural playback completion when the saved setting is enabled.
+  - Leave the setting disabled by default and keep movies single-item.
 
 ## Playback lifecycle
 
+- [x] Search Plex's on-demand subtitles from the running mpv session and load the chosen result.
 - [ ] Pause playback when Omarchy locks or the computer suspends.
 - [ ] Send a final Plex timeline update after a normal exit, player failure, or network disconnect.
 - [ ] Make failed Plex timeline updates visible without interrupting playback.
@@ -58,12 +59,16 @@ Dogfood the current plugin before expanding it. Record actual playback failures 
   - Clear credentials.
 - [x] Send the token to the helper over stdin and store it in the desktop Secret Service.
 - [x] Never put the token in Omarchy settings, process arguments, logs, or cache files.
+- [x] Add browser-based Plex PIN sign-in using a traditional streaming-capable token.
+- [x] Discover accessible Plex Media Servers and ask the user to choose when there is more than one.
+- [x] Retain server/token entry as an Advanced manual fallback.
 - [ ] Check required and optional dependencies in the UI.
-- [ ] Test first launch from an empty config and cache directory.
+- [x] Test first launch from an empty config and cache directory.
 
 ## Publication
 
-- [ ] Put the project in Git and create a tagged release.
+- [x] Put the project in Git.
+- [ ] Create a tagged release.
 - [ ] Test clean installation, upgrade, removal, and credential cleanup.
 - [ ] Run the Ryan-style audit against the exact release commit.
 
@@ -73,5 +78,4 @@ Dogfood the current plugin before expanding it. Record actual playback failures 
 - An embedded player.
 - More permanent top-level modes.
 - Recommendations and discovery feeds.
-- Multi-server support.
 - Manual transcode-quality controls unless automatic fallback proves insufficient.
