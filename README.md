@@ -28,7 +28,15 @@ Browse All opens a separate fullscreen Omarchy panel. It searches and pages thro
 - Optional: `fzf` for Browse All ranking; a bounded built-in fuzzy matcher is used when it is unavailable
 - A Plex account with access to a Plex Media Server
 
-## Local install
+## Install
+
+```bash
+omarchy plugin add https://github.com/pjgeutjens/omarchy-omaplex.git --enable
+```
+
+Omarchy asks for confirmation and which bar section to use.
+
+## Local development
 
 Copy or symlink this repository to:
 
