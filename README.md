@@ -1,6 +1,6 @@
 # Omaplex
 
-An Omarchy bar widget with bounded Continue Watching, combined Recently Added, Recent Movies, and Recent Shows lists. Every row says `Movie` or `Show` and has an explicit `UNWATCHED`, `STARTED`, or `WATCHED` label. Continue Watching merges Plex's in-progress and On Deck items, deduplicates each show, and sorts them newest-viewed first. Combined Recently Added is newest-added first. The separate movie and show views prioritize unfinished items. Multiple newly added episodes from one show collapse into the newest show row.
+Omaplex puts Plex on the Omarchy bar. The panel shows Continue Watching and Recently Added, with separate movie and show views. Browse the full library or play an item through `mpv` in a window or fullscreen. Each row shows its watched state.
 
 ## Screenshots
 
